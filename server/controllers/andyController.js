@@ -49,9 +49,10 @@ const addAndy = (req, res) => {
     });
   };
 
-// Function to get cities and countries of all Andys
+
+// Function to get unique cities, states, and countries of all Andys
 const getLocations = (req, res) => {
-    const sql = 'SELECT location_city AS city, location_state AS state, location_country AS country FROM users WHERE location_city IS NOT NULL AND location_country IS NOT NULL';
+    const sql = 'SELECT DISTINCT location_city AS city, location_state AS state, location_country AS country FROM users WHERE location_city IS NOT NULL AND location_country IS NOT NULL';
   
     db.query(sql, (err, results) => {
       if (err) {
@@ -61,8 +62,48 @@ const getLocations = (req, res) => {
       res.json(results);
     });
   };
+
+  // Function to get unique cities, states, and countries of all Andys
+const getTitles = (req, res) => {
+    const sql = 'SELECT DISTINCT job_title FROM users WHERE job_title IS NOT NULL and job_title!=""';
+  
+    db.query(sql, (err, results) => {
+      if (err) {
+        console.error('Error fetching titles:', err);
+        return res.status(500).send('Error fetching titles');
+      }
+      res.json(results);
+    });
+  };
+  
+// Function to get all Andy profiles
+const getAndys = (req, res) => {
+    const sql = `
+      SELECT 
+        user_id, 
+        first_name, 
+        last_name, 
+        job_title, 
+        location_city, 
+        location_state, 
+        location_country, 
+        company 
+      FROM users 
+      WHERE first_name = "Andy"
+    `;
+  
+    db.query(sql, (err, results) => {
+      if (err) {
+        console.error('Error fetching Andy profiles:', err);
+        return res.status(500).send('Error fetching Andy profiles');
+      }
+      res.json(results);
+    });
+  };
   
   module.exports = {
     addAndy,
-    getLocations // Export the new function
+    getLocations,
+    getTitles,
+    getAndys, // Export the new function
   };

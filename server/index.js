@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors'); 
 const app = express();
 const PORT = process.env.PORT || 5001;
-const { addAndy,getLocations } = require('./controllers/andyController');  // Import the controller
+const { addAndy,getLocations, getTitles, getAndys } = require('./controllers/andyController');  // Import the controller
 
 // Use CORS middleware
 app.use(cors({
@@ -17,6 +17,9 @@ app.use(express.json());
 // Route to add an Andy profile
 app.post('/api/add-andy', addAndy);  // Use the controller function as the handler
 app.get('/api/locations', getLocations); 
+app.get('/api/titles', getTitles); 
+app.get('/api/andys', getAndys);
+
 
 // Test database route (optional)
 app.get('/test-db', (req, res) => {

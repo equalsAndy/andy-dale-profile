@@ -14,7 +14,9 @@
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.21.1",
-    "mysql2": "^3.11.3"
+    "leaflet": "^1.9.4",
+    "mysql2": "^3.11.3",
+    "react-leaflet": "^4.2.1"
   },
   "devDependencies": {
     "concurrently": "^9.1.0",
