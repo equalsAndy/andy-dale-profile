@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define ports to check
-PORTS=(5001 3000)
+PORTS=(5001 3003)
 
 for PORT in "${PORTS[@]}"
 do
