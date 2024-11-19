@@ -21,7 +21,7 @@ function Home() {
       </div>
 
       <p>Explore the many skills and talents of people named Andy Dale.</p>
-      <Link to="/add-andy">
+      <Link to="/add-andy" hidden="true">
         <button style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer' }}>
           Add an Andy Profile
         </button>

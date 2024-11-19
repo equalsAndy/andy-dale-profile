@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import {  Link } from 'react-router-dom';
 
 const AndyList = () => {
   const [andys, setAndys] = useState([]);
@@ -35,6 +36,13 @@ const AndyList = () => {
 
   return (
     <div style={{ textAlign: 'center', marginTop: '50px' }}>
+      
+      <Link to="/" >
+        <button style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer', position:"absolute", top:'50px', left:'100px' }}>
+           Home
+        </button>
+      </Link>
+
       <h2>List of Andy Profiles</h2>
 
       {/* Search Bar */}
