@@ -8,15 +8,16 @@ const allowedOrigins = ['http://localhost:3003', 'https://andy.ootao.io', 'https
 // Use CORS middleware
 app.use(cors({
     origin: function (origin, callback) {
-        if (allowedOrigins.includes(origin) || !origin) {
-          callback(null, origin);
+        // Allow requests with `null` origin (e.g., local files, some tools)
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true); // Allow the origin
         } else {
-          callback(new Error('Not allowed by CORS'));
+            callback(new Error('Not allowed by CORS'));
         }
-      },  // Allow requests from this origin
+    },
     methods: ['GET', 'POST'],         // Specify allowed HTTP methods
-    credentials: true                 // Include credentials if needed
-  }));
+    credentials: true                 // Allow credentials like cookies
+}));
 
 // Middleware to parse JSON requests
 app.use(express.json());
