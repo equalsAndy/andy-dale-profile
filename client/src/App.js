@@ -4,34 +4,12 @@ import AddAndy from './AddAndy';
 import AndyLocations from './components/AndyLocations';
 import AndyTitles from './components/AndyTitles';
 import AndyList from './components/AndyList';
-import { detectIncognito } from 'detectincognitojs';
+
 
 
 
 function Home() {
 
-  const [alertShown, setAlertShown] = useState(false);
-
-  useEffect(() => {
-    if (!alertShown) {
-      detectIncognito()
-        .then((result) => {
-          console.log("Browser:", result.browserName);
-          console.log("Incognito Mode:", result.isPrivate);
-
-          if (result.isPrivate) {
-            alert("You are in incognito mode.");
-          } else {
-            alert("You are not in incognito mode.");
-          }
-
-          setAlertShown(true); // Prevent further alerts
-        })
-        .catch((error) => {
-          console.error("Error detecting incognito mode:", error);
-        });
-    }
-  }, [alertShown]);
 
   return (
     <div style={{ textAlign: 'center', marginTop: '50px' }}>
