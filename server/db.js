@@ -2,11 +2,17 @@
 const mysql = require('mysql2');
 
 const db = mysql.createConnection({
+  host: 'ls-8f8e643f3feaeca73303d429ffcfe9f14e17b32f.cpey1rm7ivfi.us-east-1.rds.amazonaws.com',
+  user: 'andyUser',
+  password: 'poipoi123!!',
+  
+/*
   host: 'localhost',
   user: 'andyAdmin',
-  // password: 'lion99!',
+  
   password: 'Qx7!kN8*Vp3#zL!',
- 
+  
+  */
   database: 'AndyDale'
 });
 
