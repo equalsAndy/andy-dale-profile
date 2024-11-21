@@ -7,7 +7,7 @@ const AndyTitles = () => {
   useEffect(() => {
     const fetchTitles = async () => {
       try {
-        const response = await fetch('http://localhost:5001/api/titles');
+        const response = await fetch('http://andydale.me/api/titles');
         const data = await response.json();
         setTitles(data);
       } catch (error) {

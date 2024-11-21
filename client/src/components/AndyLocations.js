@@ -7,7 +7,7 @@ const AndyLocations = () => {
   useEffect(() => {
     const fetchLocations = async () => {
       try {
-        const response = await fetch('http://localhost:5001/api/locations');
+        const response = await fetch('http://andydale.me/api/locations');
         const data = await response.json();
         setLocations(data);
       } catch (error) {

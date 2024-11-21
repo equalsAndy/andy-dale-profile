@@ -10,7 +10,7 @@ const AndyList = () => {
     // Fetch all Andy profiles
     const fetchAndys = async () => {
       try {
-        const response = await fetch('http://localhost:5001/api/andys');
+        const response = await fetch('http://andydale.me/api/andys');
         const data = await response.json();
         setAndys(data);
         setFilteredAndys(data); // Initially display all Andys
