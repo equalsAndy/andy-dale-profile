@@ -3,7 +3,7 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 5001;
 const { addAndy,getLocations, getTitles, getAndys } = require('./controllers/andyController');  // Import the controller
-const allowedOrigins = ['http://localhost:3003', 'https://andy.ootao.io', 'https://www.andydale.me', 'http://54.205.87.18'];
+const allowedOrigins = ['http://localhost:3003', 'https://andy.ootao.io', 'https://www.andydale.me', 'https://andydale.me','http://54.205.87.18'];
 
 // Use CORS middleware
 app.use(cors({
