@@ -78,28 +78,33 @@ const getTitles = (req, res) => {
   
 // Function to get all Andy profiles
 const getAndys = (req, res) => {
-    const sql = `
-      SELECT 
-        user_id, 
-        first_name, 
-        last_name, 
-        job_title, 
-        location_city, 
-        location_state, 
-        location_country, 
-        company 
-      FROM users 
-      WHERE first_name = "Andy"
-    `;
-  
-    db.query(sql, (err, results) => {
-      if (err) {
-        console.error('Error fetching Andy profiles:', err);
-        return res.status(500).send('Error fetching Andy profiles');
-      }
-      res.json(results);
-    });
-  };
+  const sql = `
+    SELECT 
+      u.user_id, 
+      u.first_name, 
+      u.last_name, 
+      u.job_title, 
+      u.location_city, 
+      u.location_state, 
+      u.location_country, 
+      u.company,
+      CASE WHEN e.email_address IS NOT NULL THEN true ELSE false END AS has_email,
+      e.allow_admin_contact,
+      e.allow_andy_contact,
+      e.allow_public_contact
+    FROM users u
+    LEFT JOIN emails e ON u.user_id = e.user_id AND e.is_primary = 1
+    WHERE u.first_name = "Andy"
+  `;
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error('Error fetching Andy profiles:', err);
+      return res.status(500).send('Error fetching Andy profiles');
+    }
+    res.json(results);
+  });
+};
   
   module.exports = {
     addAndy,

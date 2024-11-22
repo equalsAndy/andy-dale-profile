@@ -2,25 +2,42 @@ const db = require('../db');
 
 // Function to add an email for a user
 const addEmail = (req, res) => {
-   
-    const { userId, emailAddress, isPrimary } = req.body;
-
+    const { 
+      userId, 
+      emailAddress, 
+      isPrimary, 
+      allowAdminContact = 1, 
+      allowAndyContact = 0, 
+      allowPublicContact = 0 
+    } = req.body;
+  
     if (!userId || !emailAddress) {
-        return res.status(400).send('userId and emailAddress are required');
+      return res.status(400).send('userId and emailAddress are required');
     }
-
-    const sql = 'INSERT INTO emails (user_id, email_address, is_primary) VALUES (?, ?, ?)';
-    const params = [userId, emailAddress, isPrimary || 0];
-
+  
+    const sql = `
+      INSERT INTO emails 
+      (user_id, email_address, is_primary, allow_admin_contact, allow_andy_contact, allow_public_contact) 
+      VALUES (?, ?, ?, ?, ?, ?)
+    `;
+  
+    const params = [
+      userId,
+      emailAddress,
+      isPrimary || 0,
+      allowAdminContact,
+      allowAndyContact,
+      allowPublicContact
+    ];
+  
     db.query(sql, params, (err, results) => {
-        if (err) {
-            console.error('Error adding email:', err);
-            return res.status(500).send('Error adding email');
-        }
-        res.status(201).json({ emailId: results.insertId, message: 'Email added successfully' });
+      if (err) {
+        console.error('Error adding email:', err);
+        return res.status(500).send('Error adding email');
+      }
+      res.status(201).json({ emailId: results.insertId, message: 'Email added successfully' });
     });
-
-};
+  };
 
 // Function to update an email for a user
 const updateEmail = (req, res) => {
