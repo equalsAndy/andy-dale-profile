@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import {  Link } from 'react-router-dom';
+const apiUrl = process.env.REACT_APP_API_URL;
+
+console.log('API URL:', apiUrl);
 
 const AndyList = () => {
   const [andys, setAndys] = useState([]);
@@ -10,7 +13,7 @@ const AndyList = () => {
     // Fetch all Andy profiles
     const fetchAndys = async () => {
       try {
-        const response = await fetch('https://andydale.me/api/andys');
+        const response = await fetch(apiUrl+'/api/andys');
         const data = await response.json();
         setAndys(data);
         setFilteredAndys(data); // Initially display all Andys

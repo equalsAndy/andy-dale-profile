@@ -2,18 +2,10 @@
 const mysql = require('mysql2');
 
 const db = mysql.createConnection({
-  host: 'ls-8f8e643f3feaeca73303d429ffcfe9f14e17b32f.cpey1rm7ivfi.us-east-1.rds.amazonaws.com',
-  user: 'andyUser',
-  password: 'poipoi123!!',
-  
-/*
-  host: 'localhost',
-  user: 'andyAdmin',
-  
-  password: 'Qx7!kN8*Vp3#zL!',
-  
-  */
-  database: 'AndyDale'
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_DATABASE,
 });
 
 db.connect((err) => {
@@ -24,4 +16,4 @@ db.connect((err) => {
   console.log('Connected to MySQL database');
 });
 
-module.exports = db;
+module.exports = db; // Use module.exports for CommonJS

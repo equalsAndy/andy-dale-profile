@@ -105,5 +105,5 @@ const getAndys = (req, res) => {
     addAndy,
     getLocations,
     getTitles,
-    getAndys, // Export the new function
+    getAndys // Export the new function
   };
