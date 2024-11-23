@@ -3,11 +3,11 @@ import React, { useEffect, useState } from 'react';
 const AndyTitles = () => {
   const [titles, setTitles] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-
+  const apiUrl = process.env.REACT_APP_API_URL;
   useEffect(() => {
     const fetchTitles = async () => {
       try {
-        const response = await fetch('https://andydale.me/api/titles');
+        const response = await fetch(apiUrl+'/api/titles');
         const data = await response.json();
         setTitles(data);
       } catch (error) {

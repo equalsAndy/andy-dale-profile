@@ -3,11 +3,12 @@ import React, { useEffect, useState } from 'react';
 const AndyLocations = () => {
   const [locations, setLocations] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const apiUrl = process.env.REACT_APP_API_URL;
 
   useEffect(() => {
     const fetchLocations = async () => {
       try {
-        const response = await fetch('https://andydale.me/api/locations');
+        const response = await fetch(apiUrl+"/api/locations");
         const data = await response.json();
         setLocations(data);
       } catch (error) {
