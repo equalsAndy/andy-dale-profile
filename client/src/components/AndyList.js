@@ -56,6 +56,11 @@ const AndyList = () => {
     setEmail("");
   };
 
+  const handleMessageMeClick = (andy) => {
+   // setSelectedAndy(andy);
+    alert("Coming Soon!!");
+  };
+
   const handleEmailSubmit = async (
     andy,
     email,
@@ -91,6 +96,9 @@ const AndyList = () => {
         } else {
           console.error("Failed to fetch updated Andys after email submission.");
         }
+      } else if (response.status === 409) {
+        // Handle duplicate email error
+        alert("This email address is already registered.");
       } else {
         console.error("Failed to add email. Please try again.");
       }
@@ -176,7 +184,10 @@ const AndyList = () => {
               >
                 {andy.has_email ? (
                   andy.allow_andy_contact || andy.allow_public_contact ? (
-                    <button style={{ padding: "5px 10px" }}>Message Me</button>
+                    <button 
+                    style={{ padding: "5px 10px" }} 
+                    onClick={() => handleMessageMeClick(andy)}
+                    >Message Me</button>
                   ) : null // No button if both flags are false
                 ) : (
                   <button

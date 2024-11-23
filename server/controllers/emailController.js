@@ -2,34 +2,38 @@ const db = require('../db');
 
 // Function to add an email for a user
 const addEmail = (req, res) => {
-  const { 
-    userId, 
-    emailAddress, 
-    isPrimary = 0, 
-    allowAdminContact = 1, 
-    allowAndyContact = 0, 
-    allowPublicContact = 0 
-  } = req.body;
-
-  if (!userId || !emailAddress) {
-    return res.status(400).send('userId and emailAddress are required');
-  }
-
-  const sql = `
-    INSERT INTO emails 
-    (user_id, email_address, is_primary, allow_admin_contact, allow_andy_contact, allow_public_contact) 
-    VALUES (?, ?, ?, ?, ?, ?)
-  `;
-  const params = [userId, emailAddress, isPrimary, allowAdminContact, allowAndyContact, allowPublicContact];
-
-  db.query(sql, params, (err, results) => {
-    if (err) {
-      console.error('Error adding email:', err);
-      return res.status(500).send('Error adding email');
+    const { 
+      userId, 
+      emailAddress, 
+      isPrimary = 0, 
+      allowAdminContact = 1, 
+      allowAndyContact = 0, 
+      allowPublicContact = 0 
+    } = req.body;
+  
+    if (!userId || !emailAddress) {
+      return res.status(400).send('userId and emailAddress are required');
     }
-    res.status(201).json({ emailId: results.insertId, message: 'Email added successfully' });
-  });
-};
+  
+    const sql = `
+      INSERT INTO emails 
+      (user_id, email_address, is_primary, allow_admin_contact, allow_andy_contact, allow_public_contact) 
+      VALUES (?, ?, ?, ?, ?, ?)
+    `;
+    const params = [userId, emailAddress, isPrimary, allowAdminContact, allowAndyContact, allowPublicContact];
+  
+    db.query(sql, params, (err, results) => {
+      if (err) {
+        if (err.code === 'ER_DUP_ENTRY') {
+          console.error('Duplicate email:', emailAddress);
+          return res.status(409).send('This email address is already registered.');
+        }
+        console.error('Error adding email:', err);
+        return res.status(500).send('Error adding email');
+      }
+      res.status(201).json({ emailId: results.insertId, message: 'Email added successfully' });
+    });
+  };
 
 // Function to update an email for a user
 const updateEmail = (req, res) => {
