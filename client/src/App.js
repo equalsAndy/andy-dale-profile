@@ -8,33 +8,49 @@ import InfoModal from './components/InfoModal'; // Import the InfoModal componen
 import Header from './components/Header'; // Import the Header component
 import ContactAdmin from './components/ContactAdmin'; // Import the ContactAdmin page
 
+
 function Home() {
-  const [showModal, setShowModal] = useState(false); // State to control modal visibility
-  const navigate = useNavigate(); // Hook for programmatic navigation
+  const [showModal, setShowModal] = useState(false);
+  const navigate = useNavigate();
 
   const handleViewAllAndysClick = () => {
-    setShowModal(true); // Show the modal when button is clicked
+    setShowModal(true);
   };
 
   const handleModalConfirm = () => {
-    setShowModal(false); // Hide the modal
-    navigate('/andy-list'); // Navigate to /andy-list
+    setShowModal(false);
+    navigate('/andy-list');
   };
 
   const handleModalClose = () => {
-    setShowModal(false); // Close the modal without navigating
+    setShowModal(false);
   };
 
   return (
-    <div style={{ textAlign: 'center', marginTop: '50px' }}>
-      <h1>Welcome to Andy Dale</h1>
+    <div style={{ textAlign: 'center', marginTop: '20px' }}>
+      {/* Logo and Header */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '10px', // Adds spacing between logo and text
+        }}
+      >
+        <img
+          src="/andydale.me.png"
+          alt="Andy Dale Logo"
+          style={{ maxWidth: '60px' }}
+        />
+        <h1 style={{ margin: 0 }}>Welcome to Andy Dale</h1>
+      </div>
 
       {/* Locations Block */}
       <div style={{ width: '66.6%', marginLeft: '20px', textAlign: 'left' }}>
         <AndyLocations />
       </div>
 
-      {/* Titles Block, offset to the right */}
+      {/* Titles Block */}
       <div style={{ width: '66.6%', marginLeft: '340px', textAlign: 'right' }}>
         <AndyTitles />
       </div>
@@ -47,12 +63,16 @@ function Home() {
       </Link>
       <button
         onClick={handleViewAllAndysClick}
-        style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer', marginLeft: '10px' }}
+        style={{
+          padding: '10px 20px',
+          fontSize: '16px',
+          cursor: 'pointer',
+          marginLeft: '10px',
+        }}
       >
         View All Andys
       </button>
 
-      {/* Show Modal if Active */}
       {showModal && <InfoModal onClose={handleModalClose} onConfirm={handleModalConfirm} />}
     </div>
   );
