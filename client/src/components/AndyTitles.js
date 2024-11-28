@@ -4,10 +4,11 @@ const AndyTitles = () => {
   const [titles, setTitles] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const apiUrl = process.env.REACT_APP_API_URL;
+
   useEffect(() => {
     const fetchTitles = async () => {
       try {
-        const response = await fetch(apiUrl+'/api/titles');
+        const response = await fetch(apiUrl + '/api/titles');
         const data = await response.json();
         setTitles(data);
       } catch (error) {
@@ -16,7 +17,7 @@ const AndyTitles = () => {
     };
 
     fetchTitles();
-  }, []);
+  }, [apiUrl]); // Include apiUrl in the dependency array
 
   useEffect(() => {
     if (titles.length > 0) {
@@ -51,8 +52,10 @@ const AndyTitles = () => {
           zIndex: -1,
         }}
       />
-      <p style={{textAlign:'center'}}>Andy Dale's title is a:</p>
-      <p style={{textAlign:'center'}}><strong>{job_title}</strong></p>
+      <p style={{ textAlign: 'center' }}>Andy Dale's title is a:</p>
+      <p style={{ textAlign: 'center' }}>
+        <strong>{job_title}</strong>
+      </p>
     </div>
   );
 };

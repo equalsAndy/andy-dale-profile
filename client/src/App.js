@@ -78,21 +78,22 @@ function Home() {
   );
 }
 
-
 function App() {
   return (
     <Router>
       <Header /> {/* Add the Header component */}
       <div style={{ paddingTop: '70px' }}>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/add-andy" element={<AddAndy />} />
-        <Route path="/andy-list" element={<AndyList />} />
-        <Route path="/contact-admin" element={<ContactAdmin />} /> 
-      </Routes>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/add-andy" element={<AddAndy />} />
+          <Route path="/andy-list" element={<AndyList />} />
+          <Route path="/contact-admin" element={<ContactAdmin />} /> 
+        </Routes>
       </div>
     </Router>
   );
 }
+
+
 
 export default App;

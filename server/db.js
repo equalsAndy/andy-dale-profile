@@ -1,19 +1,16 @@
 // db.js
 const mysql = require('mysql2');
 
-const db = mysql.createConnection({
+// Create a connection pool
+const pool = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE,
+  waitForConnections: true,   // Ensures queued requests wait for a free connection
+  connectionLimit: 10,        // Max number of connections in the pool
+  queueLimit: 0               // No limit for queued requests
 });
 
-db.connect((err) => {
-  if (err) {
-    console.error('Error connecting to the database:', err);
-    return;
-  }
-  console.log('Connected to MySQL database');
-});
-
-module.exports = db; // Use module.exports for CommonJS
+// Export the pool with promise support for async/await
+module.exports = pool.promise();

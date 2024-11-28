@@ -3,214 +3,192 @@ const sendEmailUtil = require('../utils/sendEmail');
 
 // Function to send an email
 const sendAdminMessage = async (req, res) => {
-    console.log('sendAdminMessage route hit');
-    const { subject, message, email } = req.body;
+  console.log('sendAdminMessage route hit');
+  const { subject, message, email } = req.body;
 
-    // Default values for user_id and recipient_email
-    const userId = 2;
-    const to = 'equalsandy@gmail.com';
+  const userId = 2; // Default user_id
+  const to = 'equalsandy@gmail.com'; // Default recipient_email
 
-    // Validate required fields
-    if (!subject || !message) {
-        return res.status(400).send('Subject and message are required');
-    }
+  if (!subject || !message) {
+    return res.status(400).send('Subject and message are required');
+  }
 
-    // Define initial status as 'pending'
-    const status = 'pending';
+  const status = 'pending';
 
-    // Prepare the SQL query and parameters
-    const sql = `
+  try {
+    // Insert the message into the database
+    const [results] = await db.query(
+      `
       INSERT INTO messages 
       (user_id, recipient_email, subject, body, sent_at, status, sender_email) 
       VALUES (?, ?, ?, ?, NOW(), ?, ?)
-    `;
-    const params = [userId, to, subject, message, status, email || null];
+      `,
+      [userId, to, subject, message, status, email || null]
+    );
 
-    // Save the message to the database
-    db.query(sql, params, async (err, results) => {
-        if (err) {
-            console.error('Error saving message to the database:', err);
-            return res.status(500).send('Error saving message');
-        }
+    const messageId = results.insertId;
 
-        const messageId = results.insertId;
+    try {
+      // Send the email using the utility
+      const emailResponse = await sendEmailUtil({
+        to,
+        subject,
+        text: message, // Plain text email
+        html: null,    // No HTML content
+      });
 
-        try {
-            // Call the utility function to send the email
-            const emailResponse = await sendEmailUtil({
-                to,
-                subject,
-                text: message, // Use the `message` as plain text
-                html: null, // No HTML content provided
-            });
+      const finalStatus = emailResponse.success ? 'sent' : 'failed';
 
-            let finalStatus = 'sent';
-            if (!emailResponse.success) {
-                finalStatus = 'failed';
-            }
+      // Update the message status after attempting to send
+      await db.query(
+        `
+        UPDATE messages 
+        SET status = ?, failure_reason = ? 
+        WHERE message_id = ?
+        `,
+        [finalStatus, emailResponse.success ? null : emailResponse.error?.message || 'Unknown error', messageId]
+      );
 
-            // Update the message status after attempting to send
-            const updateSql = `
-              UPDATE messages 
-              SET status = ?, failure_reason = ? 
-              WHERE message_id = ?
-            `;
-            const updateParams = [
-                finalStatus,
-                emailResponse.success ? null : emailResponse.error?.message || 'Unknown error',
-                messageId,
-            ];
+      if (emailResponse.success) {
+        res.status(200).json({
+          messageId,
+          emailMessageId: emailResponse.messageId,
+          message: 'Email sent and saved successfully',
+        });
+      } else {
+        res.status(500).json({
+          messageId,
+          error: emailResponse.error?.message || 'Failed to send email',
+          message: 'Email sending failed',
+        });
+      }
+    } catch (emailError) {
+      console.error('Error sending email:', emailError);
 
-            db.query(updateSql, updateParams, (updateErr) => {
-                if (updateErr) {
-                    console.error('Error updating message status:', updateErr);
-                    return res.status(500).send('Error updating message status');
-                }
+      // Update message status to 'failed' in case of an exception
+      await db.query(
+        `
+        UPDATE messages 
+        SET status = 'failed', failure_reason = ? 
+        WHERE message_id = ?
+        `,
+        [emailError.message, messageId]
+      );
 
-                if (emailResponse.success) {
-                    res.status(200).json({
-                        messageId,
-                        emailMessageId: emailResponse.messageId,
-                        message: 'Email sent and saved successfully',
-                    });
-                } else {
-                    res.status(500).json({
-                        messageId,
-                        error: emailResponse.error?.message || 'Failed to send email',
-                        message: 'Email sending failed',
-                    });
-                }
-            });
-        } catch (error) {
-            console.error('Error sending email:', error);
-
-            // Update the message status to 'failed' if sending throws an exception
-            const updateSql = `
-              UPDATE messages 
-              SET status = 'failed', failure_reason = ? 
-              WHERE message_id = ?
-            `;
-            const updateParams = [error.message, messageId];
-
-            db.query(updateSql, updateParams, (updateErr) => {
-                if (updateErr) {
-                    console.error('Error updating message status:', updateErr);
-                    return res.status(500).send('Error updating message status');
-                }
-                res.status(500).send('Error sending email');
-            });
-        }
-    });
+      res.status(500).send('Error sending email');
+    }
+  } catch (dbError) {
+    console.error('Error saving message to the database:', dbError);
+    res.status(500).send('Error saving message');
+  }
 };
 
 // Function to add an email for a user
-const addEmail = (req, res) => {
-    const { 
-      userId, 
-      emailAddress, 
-      isPrimary = 0, 
-      allowAdminContact = 1, 
-      allowAndyContact = 0, 
-      allowPublicContact = 0 
-    } = req.body;
-  
-    if (!userId || !emailAddress) {
-      return res.status(400).send('userId and emailAddress are required');
-    }
-  
-    const sql = `
+const addEmail = async (req, res) => {
+  const {
+    userId,
+    emailAddress,
+    isPrimary = 0,
+    allowAdminContact = 1,
+    allowAndyContact = 0,
+    allowPublicContact = 0,
+  } = req.body;
+
+  if (!userId || !emailAddress) {
+    return res.status(400).send('userId and emailAddress are required');
+  }
+
+  try {
+    await db.query(
+      `
       INSERT INTO emails 
       (user_id, email_address, is_primary, allow_admin_contact, allow_andy_contact, allow_public_contact) 
       VALUES (?, ?, ?, ?, ?, ?)
-    `;
-    const params = [userId, emailAddress, isPrimary, allowAdminContact, allowAndyContact, allowPublicContact];
-  
-    db.query(sql, params, (err, results) => {
-      if (err) {
-        if (err.code === 'ER_DUP_ENTRY') {
-          console.error('Duplicate email:', emailAddress);
-          return res.status(409).send('This email address is already registered.');
-        }
-        console.error('Error adding email:', err);
-        return res.status(500).send('Error adding email');
-      }
-      res.status(201).json({ emailId: results.insertId, message: 'Email added successfully' });
-    });
-  };
+      `,
+      [userId, emailAddress, isPrimary, allowAdminContact, allowAndyContact, allowPublicContact]
+    );
+    res.status(201).json({ message: 'Email added successfully' });
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') {
+      console.error('Duplicate email:', emailAddress);
+      res.status(409).send('This email address is already registered.');
+    } else {
+      console.error('Error adding email:', err);
+      res.status(500).send('Error adding email');
+    }
+  }
+};
 
 // Function to update an email for a user
-const updateEmail = (req, res) => {
+const updateEmail = async (req, res) => {
   const { emailId, emailAddress, isPrimary, verified } = req.body;
 
   if (!emailId) {
     return res.status(400).send('emailId is required');
   }
 
-  const sql = 'UPDATE emails SET email_address = ?, is_primary = ?, verified = ? WHERE email_id = ?';
-  const params = [emailAddress, isPrimary || 0, verified || 0, emailId];
-
-  db.query(sql, params, (err, results) => {
-    if (err) {
-      console.error('Error updating email:', err);
-      return res.status(500).send('Error updating email');
-    }
+  try {
+    const [results] = await db.query(
+      `
+      UPDATE emails 
+      SET email_address = ?, is_primary = ?, verified = ? 
+      WHERE email_id = ?
+      `,
+      [emailAddress, isPrimary || 0, verified || 0, emailId]
+    );
 
     if (results.affectedRows === 0) {
       return res.status(404).send('Email not found');
     }
 
     res.send('Email updated successfully');
-  });
+  } catch (err) {
+    console.error('Error updating email:', err);
+    res.status(500).send('Error updating email');
+  }
 };
 
 // Function to delete an email
-const deleteEmail = (req, res) => {
+const deleteEmail = async (req, res) => {
   const { emailId } = req.params;
 
   if (!emailId) {
     return res.status(400).send('emailId is required');
   }
 
-  const sql = 'DELETE FROM emails WHERE email_id = ?';
-  const params = [emailId];
-
-  db.query(sql, params, (err, results) => {
-    if (err) {
-      console.error('Error deleting email:', err);
-      return res.status(500).send('Error deleting email');
-    }
+  try {
+    const [results] = await db.query('DELETE FROM emails WHERE email_id = ?', [emailId]);
 
     if (results.affectedRows === 0) {
       return res.status(404).send('Email not found');
     }
 
     res.send('Email deleted successfully');
-  });
+  } catch (err) {
+    console.error('Error deleting email:', err);
+    res.status(500).send('Error deleting email');
+  }
 };
 
 // Function to get all emails for a user
-const getEmails = (req, res) => {
-  const { userId } = req.body; // Extract userId directly from the body
+const getEmails = async (req, res) => {
+  const { userId } = req.body;
 
   if (!userId) {
     return res.status(400).send('userId is required');
   }
 
-  const sql = 'SELECT * FROM emails WHERE user_id = ?';
-  const params = [userId];
-
-  db.query(sql, params, (err, results) => {
-    if (err) {
-      console.error('Error fetching emails:', err);
-      return res.status(500).send('Error fetching emails');
-    }
-
+  try {
+    const [results] = await db.query('SELECT * FROM emails WHERE user_id = ?', [userId]);
     res.json(results);
-  });
+  } catch (err) {
+    console.error('Error fetching emails:', err);
+    res.status(500).send('Error fetching emails');
+  }
 };
 
 module.exports = {
-    sendAdminMessage,
+  sendAdminMessage,
   addEmail,
   updateEmail,
   deleteEmail,

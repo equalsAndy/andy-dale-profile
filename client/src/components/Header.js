@@ -30,8 +30,8 @@ const Header = () => {
           justifyContent: 'space-between',
           alignItems: 'center',
           padding: '10px 20px',
-          paddingLeft:'40px',
-          paddingRight:'40px'
+          paddingLeft: '40px',
+          paddingRight: '40px',
         }}
       >
         <h1 style={{ margin: 0, fontSize: '24px' }}>
