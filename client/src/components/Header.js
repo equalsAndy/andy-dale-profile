@@ -20,7 +20,8 @@ const Header = () => {
         });
         if (response.ok) {
           const userData = await response.json();
-          setUser(userData);
+          console.log("userData = "+JSON.stringify(userData));
+          setUser(userData.user);
   
           // Ensure account exists for the logged-in user
           const email = userData._json?.email || userData.emails?.[0]?.value;
@@ -118,6 +119,7 @@ const Header = () => {
                   alt={user.displayName || user.nickname || 'User'}
                   style={{ height: '30px', width: '30px', borderRadius: '50%' }}
                 />
+      
                 <span>{user.displayName || user.nickname || user._json?.email || 'User'}</span>
               </div>
               <button
@@ -167,6 +169,7 @@ const Header = () => {
               Message Admin
             </button>
           )}
+         
         </div>
       </div>
     </header>

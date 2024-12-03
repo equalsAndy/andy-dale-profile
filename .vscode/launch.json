@@ -1,0 +1,17 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "type": "node",
+        "request": "launch",
+        "name": "Launch Server",
+        "program": "${workspaceFolder}/server/index.js", // Path to your server file
+        "restart": true, // Automatically restart on changes
+        "runtimeExecutable": "nodemon", // Use nodemon for watching changes
+        "console": "integratedTerminal", // Output in VS Code terminal
+        "env": {
+          "NODE_ENV": "development" // Environment variables
+        }
+      }
+    ]
+  }

@@ -94,8 +94,45 @@ passport.serializeUser((user, done) => {
   done(null, user);
 });
 
-passport.deserializeUser((user, done) => {
-  done(null, user);
+passport.deserializeUser(async (user, done) => {
+  try {
+    if (!user || !user.emails || !user.emails[0]) {
+      console.error('Invalid user object during deserialization');
+      return done(null, null); // No email in user object
+    }
+
+    const email = user.emails[0].value; // Auth0 email
+    console.log("auth0 email - " + email);
+
+    // Fetch the account from the database
+    const [result] = await db.query(
+      'SELECT account_id, username, verified FROM accounts WHERE username = ?',
+      [email]
+    );
+
+    if (result) {
+      const account = result; // Explicitly use the first result object
+      console.log("account: " + JSON.stringify(account));
+
+      const deserializedUser = {
+        id: account[0].account_id,
+        username: account[0].username,
+        verified: account[0].verified === 1, // Convert verified field to boolean
+        displayName: user.displayName || user.name || user.nickname,
+        email: email,
+        picture: user.picture || '/default-avatar.png', // Default picture
+      };
+
+      console.log("Deserialized User:", deserializedUser);
+      done(null, deserializedUser);
+    } else {
+      console.error('No account found for email:', email);
+      done(null, null); // No matching account in the database
+    }
+  } catch (err) {
+    console.error('Error deserializing user:', err);
+    done(err);
+  }
 });
 
 // Auth routes
@@ -164,9 +201,14 @@ app.post('/auth/logout', (req, res) => {
 });
 
 app.get('/api/user', (req, res) => {
+  console.log('Request User:', req.user); // Debug logging
   if (req.user) {
-    res.json(req.user);
+    res.json({
+      user: req.user,
+      verified: req.user.verified || false, // Include verified status
+    });
   } else {
+    console.error('No user found in request.');
     res.status(401).json({ error: 'User not authenticated' });
   }
 });

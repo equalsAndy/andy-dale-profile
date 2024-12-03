@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const ContactAdmin = () => {
   const [subject, setSubject] = useState('');
@@ -7,8 +7,29 @@ const ContactAdmin = () => {
   const [submitted, setSubmitted] = useState(false); // Track submission status
   const [error, setError] = useState(false); // Track error state
   const apiUrl = process.env.REACT_APP_API_URL;
-  
-  
+
+  useEffect(() => {
+    // Fetch the logged-in user's email
+    const fetchUserEmail = async () => {
+      try {
+        const response = await fetch(`${apiUrl}/api/user`, {
+          credentials: 'include', // Include cookies for session
+        });
+        if (response.ok) {
+          const userData = await response.json();
+          console.log("ContactAdmin - userData - "+ JSON.stringify(userData));
+          setSenderEmail(userData.user.email || ''); // Set email if available
+        } else {
+          console.error('Failed to fetch user email:', response.statusText);
+        }
+      } catch (err) {
+        console.error('Error fetching user email:', err);
+      }
+    };
+
+    fetchUserEmail();
+  }, [apiUrl]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -18,7 +39,7 @@ const ContactAdmin = () => {
     }
 
     try {
-      const response = await fetch(apiUrl+'/api/sendAdminMessage', {
+      const response = await fetch(apiUrl + '/api/sendAdminMessage', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ subject, message, email: senderEmail }),
