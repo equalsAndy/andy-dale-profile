@@ -81,7 +81,7 @@ passport.use(
       domain: process.env.AUTH0_DOMAIN,
       clientID: process.env.AUTH0_CLIENT_ID,
       clientSecret: process.env.AUTH0_CLIENT_SECRET,
-      callbackURL: process.env.DEFAULT_RETURN+ '/auth/callback', // Server's callback URL
+      callbackURL: process.env.AUTH0_CALLBACK_URL, // Server's callback URL
     },
     (accessToken, refreshToken, extraParams, profile, done) => {
       return done(null, profile);
@@ -115,13 +115,17 @@ passport.deserializeUser(async (user, done) => {
       console.log("account: " + JSON.stringify(account));
 
       const deserializedUser = {
-        id: account[0].account_id,
-        username: account[0].username,
-        verified: account[0].verified === 1, // Convert verified field to boolean
         displayName: user.displayName || user.name || user.nickname,
         email: email,
         picture: user.picture || '/default-avatar.png', // Default picture
       };
+
+      if (account != [])
+      {
+        deserializedUser.id= account[0].account_id;
+        deserializedUser.username= account[0].username;
+        deserializedUser.verified= account[0].verified === 1; // Convert verified field to boolean
+      }
 
       console.log("Deserialized User:", deserializedUser);
       done(null, deserializedUser);
@@ -139,7 +143,7 @@ passport.deserializeUser(async (user, done) => {
 
   app.get('/auth/login', (req, res) => {
     const returnTo = process.env.DEFAULT_RETURN+req.query.returnTo || process.env.DEFAULT_RETURN || '/';
-    //console.log('Setting returnTo:', returnTo);
+    console.log('Setting returnTo:', returnTo);
   
     req.session.returnTo = returnTo;
     req.session.save((err) => {
@@ -153,9 +157,9 @@ passport.deserializeUser(async (user, done) => {
   });
 
   app.get('/auth/callback', (req, res, next) => {
-    //console.log('Session at callback:', req.session);
+    console.log('Session at callback:', req.session);
     const _returnTo = cloneDeep(req.session.returnTo);
-    //console.log('Session.returnTo at callback:', _returnTo);
+    console.log('Session.returnTo at callback:', _returnTo);
   
     
     passport.authenticate('auth0', (err, user) => {
