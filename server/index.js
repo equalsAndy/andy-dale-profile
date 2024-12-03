@@ -102,7 +102,7 @@ passport.deserializeUser(async (user, done) => {
     }
 
     const email = user.emails[0].value; // Auth0 email
-    console.log("auth0 email - " + email);
+    //console.log("auth0 email - " + email);
 
     // Fetch the account from the database
     const [result] = await db.query(
@@ -112,7 +112,7 @@ passport.deserializeUser(async (user, done) => {
 
     if (result) {
       const account = result; // Explicitly use the first result object
-      console.log("account: " + JSON.stringify(account));
+      //console.log("account: " + JSON.stringify(account));
 
       const deserializedUser = {
         displayName: user.displayName || user.name || user.nickname,
@@ -127,7 +127,7 @@ passport.deserializeUser(async (user, done) => {
         deserializedUser.verified= account[0].verified === 1; // Convert verified field to boolean
       }
 
-      console.log("Deserialized User:", deserializedUser);
+     // console.log("Deserialized User:", deserializedUser);
       done(null, deserializedUser);
     } else {
       console.error('No account found for email:', email);
@@ -143,7 +143,7 @@ passport.deserializeUser(async (user, done) => {
 
   app.get('/auth/login', (req, res) => {
     const returnTo = process.env.DEFAULT_RETURN+req.query.returnTo || process.env.DEFAULT_RETURN || '/';
-    console.log('Setting returnTo:', returnTo);
+    //console.log('Setting returnTo:', returnTo);
   
     req.session.returnTo = returnTo;
     req.session.save((err) => {
@@ -157,9 +157,9 @@ passport.deserializeUser(async (user, done) => {
   });
 
   app.get('/auth/callback', (req, res, next) => {
-    console.log('Session at callback:', req.session);
+   // console.log('Session at callback:', req.session);
     const _returnTo = cloneDeep(req.session.returnTo);
-    console.log('Session.returnTo at callback:', _returnTo);
+   // console.log('Session.returnTo at callback:', _returnTo);
   
     
     passport.authenticate('auth0', (err, user) => {
@@ -205,7 +205,7 @@ app.post('/auth/logout', (req, res) => {
 });
 
 app.get('/api/user', (req, res) => {
-  console.log('Request User:', req.user); // Debug logging
+ // console.log('Request User:', req.user); // Debug logging
   if (req.user) {
     res.json({
       user: req.user,
