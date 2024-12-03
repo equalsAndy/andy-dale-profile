@@ -1,9 +1,16 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
-const ClaimMyProfile = ({ andy, onClose, onSubmit }) => {
+const ClaimMyProfile = ({ andy, user, onClose, onSubmit }) => {
   const [email, setEmail] = useState('');
   const [allowAndyContact, setAllowAndyContact] = useState(false); // Default unchecked
   const [allowPublicContact, setAllowPublicContact] = useState(false); // Default unchecked
+
+  // Initialize email from the user prop
+  useEffect(() => {
+    if (user && user._json && user._json.email) {
+      setEmail(user._json.email); // Populate the email field with the user's email
+    }
+  }, [user]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -38,24 +45,25 @@ const ClaimMyProfile = ({ andy, onClose, onSubmit }) => {
         <p style={{ marginBottom: '20px' }}>
           By adding your email, you agree that the admin of this site can
           contact you. 
+          <br />
+          Your email will never be shared, sold, or otherwise used beyond the
+          scope of messaging you choose!
           <br /><br />
-          Your email will never be shared, sold, or otherwise used beyond the scope of messaging you choose!. 
-          <br /><br />
-          Optionally, you
-          can allow other Andy Dales or general users to send you messages
-          through this platform.
+          Optionally, you can allow other Andy Dales or general users to send you
+          messages through this platform.
         </p>
         <form onSubmit={handleSubmit}>
           <input
             type="email"
-            placeholder="Enter your email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            disabled // Make the email field non-editable
             style={{
               padding: '10px',
               fontSize: '16px',
               marginBottom: '20px',
               width: '80%',
+              backgroundColor: '#f0f0f0',
+              cursor: 'not-allowed',
             }}
           />
           <div style={{ textAlign: 'left', marginBottom: '20px' }}>

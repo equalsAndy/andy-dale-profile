@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, Link, useNavigate } from 'react-router-dom';
 import AddAndy from './AddAndy';
 import AndyLocations from './components/AndyLocations';
@@ -8,8 +8,9 @@ import InfoModal from './components/InfoModal'; // Import the InfoModal componen
 import Header from './components/Header'; // Import the Header component
 import ContactAdmin from './components/ContactAdmin'; // Import the ContactAdmin page
 
+const apiUrl = process.env.REACT_APP_API_URL;
 
-function Home() {
+function Home({ user }) {
   const [showModal, setShowModal] = useState(false);
   const navigate = useNavigate();
 
@@ -79,21 +80,43 @@ function Home() {
 }
 
 function App() {
+  const [user, setUser] = useState(null);
+
+  // Fetch user data
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await fetch(`${apiUrl}/api/user`, {
+          credentials: 'include', // Include cookies for session
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setUser(data);
+        } else {
+          setUser(null);
+        }
+      } catch (error) {
+        console.error('Error fetching user:', error);
+        setUser(null);
+      }
+    };
+
+    fetchUser();
+  }, []);
+
   return (
     <Router>
-      <Header /> {/* Add the Header component */}
+      <Header user={user} /> {/* Pass user as a prop to Header */}
       <div style={{ paddingTop: '70px' }}>
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<Home user={user} />} /> {/* Pass user to Home */}
           <Route path="/add-andy" element={<AddAndy />} />
-          <Route path="/andy-list" element={<AndyList />} />
-          <Route path="/contact-admin" element={<ContactAdmin />} /> 
+          <Route path="/andy-list" element={<AndyList user={user} />} /> {/* Pass user to AndyList */}
+          <Route path="/contact-admin" element={<ContactAdmin />} />
         </Routes>
       </div>
     </Router>
   );
 }
-
-
 
 export default App;

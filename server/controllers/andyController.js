@@ -20,7 +20,7 @@ const addAndy = async (req, res) => {
   const lastName = 'Dale';
 
   const sql = `
-    INSERT INTO users 
+    INSERT INTO profile 
     (first_name, last_name, aka, bio, location_city, location_state, location_country, job_title, company, 
      years_of_experience, linkedin_url, personal_website_url, contact_email) 
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -42,7 +42,7 @@ const addAndy = async (req, res) => {
       personalWebsiteUrl,
       contactEmail,
     ]);
-    res.status(201).json({ message: 'Andy added successfully', userId: result.insertId });
+    res.status(201).json({ message: 'Andy added successfully', profileId: result.insertId });
   } catch (err) {
     console.error('Database error:', err);
     res.status(500).json({ message: 'Error adding Andy to the database' });
@@ -52,7 +52,7 @@ const addAndy = async (req, res) => {
 // Function to get unique cities, states, and countries of all Andys
 const getLocations = async (req, res) => {
   const sql =
-    'SELECT DISTINCT location_city AS city, location_state AS state, location_country AS country FROM users WHERE location_city IS NOT NULL AND location_country IS NOT NULL';
+    'SELECT DISTINCT location_city AS city, location_state AS state, location_country AS country FROM profile WHERE location_city IS NOT NULL AND location_country IS NOT NULL';
 
   try {
     const [results] = await db.query(sql);
@@ -65,7 +65,7 @@ const getLocations = async (req, res) => {
 
 // Function to get unique job titles of all Andys
 const getTitles = async (req, res) => {
-  const sql = 'SELECT DISTINCT job_title FROM users WHERE job_title IS NOT NULL and job_title != ""';
+  const sql = 'SELECT DISTINCT job_title FROM profile WHERE job_title IS NOT NULL and job_title != ""';
 
   try {
     const [results] = await db.query(sql);
@@ -80,21 +80,21 @@ const getTitles = async (req, res) => {
 const getAndys = async (req, res) => {
   const sql = `
     SELECT 
-      u.user_id, 
-      u.first_name, 
-      u.last_name, 
-      u.job_title, 
-      u.location_city, 
-      u.location_state, 
-      u.location_country, 
-      u.company,
+      p.profile_id, 
+      p.first_name, 
+      p.last_name, 
+      p.job_title, 
+      p.location_city, 
+      p.location_state, 
+      p.location_country, 
+      p.company,
       CASE WHEN e.email_address IS NOT NULL THEN true ELSE false END AS has_email,
       e.allow_admin_contact,
       e.allow_andy_contact,
       e.allow_public_contact
-    FROM users u
-    LEFT JOIN emails e ON u.user_id = e.user_id AND e.is_primary = 1
-    WHERE u.first_name = "Andy"
+    FROM profile p
+    LEFT JOIN emails e ON p.profile_id = e.profile_id AND e.is_primary = 1
+    WHERE p.first_name = "Andy"
   `;
 
   try {

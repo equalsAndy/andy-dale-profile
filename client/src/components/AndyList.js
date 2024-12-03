@@ -1,16 +1,32 @@
 import React, { useEffect, useState } from "react";
-
-
 import ClaimMyProfile from "./ClaimMyProfile";
 
 const apiUrl = process.env.REACT_APP_API_URL;
 
-const AndyList = () => {
+// Button to claim a profile
+const ClaimButton = ({ andy, user, onClaim }) => (
+  <button
+    style={{ padding: "5px 10px" }}
+    onClick={() => onClaim(andy)}
+    disabled={!user} // Disable if user is not logged in
+  >
+    {user ? "This is me!" : "Login to claim"}
+  </button>
+);
+
+// Button to message a profile
+const MessageButton = ({ andy, onMessage }) => (
+  <button style={{ padding: "5px 10px" }} onClick={() => onMessage(andy)}>
+    Message Me
+  </button>
+);
+
+const AndyList = ({ user }) => {
   const [andys, setAndys] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredAndys, setFilteredAndys] = useState([]);
-  const [selectedAndy, setSelectedAndy] = useState(null); // Andy selected for email
-  const [email, setEmail] = useState(""); // Email input value
+  const [selectedAndy, setSelectedAndy] = useState(null);
+  const [dialogContent, setDialogContent] = useState(null); // State for dialog content
 
   useEffect(() => {
     const fetchAndys = async () => {
@@ -36,28 +52,24 @@ const AndyList = () => {
         (andy.job_title &&
           andy.job_title.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (andy.location_city &&
-          andy.location_city
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase())) ||
+          andy.location_city.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (andy.location_state &&
-          andy.location_state
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase())) ||
+          andy.location_state.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (andy.location_country &&
-          andy.location_country
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()))
+          andy.location_country.toLowerCase().includes(searchTerm.toLowerCase()))
     );
     setFilteredAndys(results);
   }, [searchTerm, andys]);
 
   const handleThisIsMeClick = (andy) => {
+    if (!user) {
+      alert("You need to log in to claim a profile.");
+      return;
+    }
     setSelectedAndy(andy);
-    setEmail("");
   };
 
   const handleMessageMeClick = (andy) => {
-   // setSelectedAndy(andy);
     alert("Coming Soon!!");
   };
 
@@ -71,13 +83,13 @@ const AndyList = () => {
       console.error("Missing required arguments for handleEmailSubmit");
       return;
     }
-  
+
     try {
       const response = await fetch(`${apiUrl}/api/addEmail`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userId: andy.user_id,
+          userId: andy.profile_id,
           emailAddress: email,
           isPrimary: 1, // Default to primary email
           allowAdminContact: true, // Admin contact is always true
@@ -85,9 +97,8 @@ const AndyList = () => {
           allowPublicContact, // User-defined preference
         }),
       });
-  
+
       if (response.ok) {
-        // Re-fetch data to get the updated list
         const updatedResponse = await fetch(`${apiUrl}/api/andys`);
         if (updatedResponse.ok) {
           const updatedData = await updatedResponse.json();
@@ -97,8 +108,10 @@ const AndyList = () => {
           console.error("Failed to fetch updated Andys after email submission.");
         }
       } else if (response.status === 409) {
-        // Handle duplicate email error
-        alert("This email address is already registered.");
+        setSelectedAndy(null); // Close the claim modal
+        setDialogContent(
+          "It appears that you have already claimed a profile. If you think this is an error, please message the admin using the button above."
+        ); // Set the dialog content
       } else {
         console.error("Failed to add email. Please try again.");
       }
@@ -111,9 +124,12 @@ const AndyList = () => {
     setSelectedAndy(null);
   };
 
+  const closeDialog = () => {
+    setDialogContent(null); // Close the dialog by clearing its content
+  };
+
   return (
     <div style={{ textAlign: "center", marginTop: "50px" }}>
-    
       <h2>List of Andy Profiles</h2>
 
       <input
@@ -158,7 +174,7 @@ const AndyList = () => {
         </thead>
         <tbody>
           {filteredAndys.map((andy) => (
-            <tr key={andy.user_id} style={{ textAlign: "left" }}>
+            <tr key={andy.profile_id} style={{ textAlign: "left" }}>
               <td style={{ borderBottom: "1px solid #ddd", padding: "10px" }}>
                 {andy.first_name} {andy.last_name}
               </td>
@@ -184,27 +200,17 @@ const AndyList = () => {
               >
                 {andy.has_email ? (
                   andy.allow_andy_contact || andy.allow_public_contact ? (
-                    <button 
-                    style={{ padding: "5px 10px" }} 
-                    onClick={() => handleMessageMeClick(andy)}
-                    >Message Me</button>
-                  ) : null // No button if both flags are false
+                    <MessageButton
+                      andy={andy}
+                      onMessage={handleMessageMeClick}
+                    />
+                  ) : null
                 ) : (
-                  <button
-                    style={{ padding: "5px 10px" }}
-                    onClick={() => handleThisIsMeClick(andy)}
-                  >
-                    This is me!
-                  </button>
-                )}
-                {andy.allow_admin_contact && (
-                  <span
-                    style={{
-                      marginLeft: "10px",
-                      fontSize: "12px",
-                      color: "#888",
-                    }}
-                  ></span>
+                  <ClaimButton
+                    andy={andy}
+                    user={user}
+                    onClaim={handleThisIsMeClick}
+                  />
                 )}
               </td>
             </tr>
@@ -214,59 +220,46 @@ const AndyList = () => {
 
       {/* Modal for Email Form */}
       {selectedAndy && (
+        <ClaimMyProfile
+          andy={selectedAndy}
+          user={user}
+          onClose={closeModal}
+          onSubmit={handleEmailSubmit}
+        />
+      )}
+
+      {/* Dialog Box */}
+      {dialogContent && (
         <div
           style={{
             position: "fixed",
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            background: "#fff",
+            background: "#eee",
             padding: "20px",
             borderRadius: "8px",
             boxShadow: "0 4px 8px rgba(0,0,0,0.2)",
             zIndex: 1000,
+            textAlign: "center",
           }}
         >
-          <h3>
-            Add Your Email for {selectedAndy.first_name}{" "}
-            {selectedAndy.last_name}
-          </h3>
-          <form onSubmit={handleEmailSubmit}>
-            <input
-              type="email"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              style={{ padding: "10px", fontSize: "16px", marginRight: "10px" }}
-            />
-            <button
-              type="submit"
-              style={{ padding: "10px 20px", fontSize: "16px" }}
-            >
-              Submit
-            </button>
-            <button
-              type="button"
-              onClick={closeModal}
-              style={{
-                padding: "10px 20px",
-                marginLeft: "10px",
-                fontSize: "16px",
-              }}
-            >
-              Cancel
-            </button>
-          </form>
+          <p>{dialogContent}</p>
+          <button
+            onClick={closeDialog}
+            style={{
+              padding: "10px 20px",
+              fontSize: "16px",
+              backgroundColor: "#4CAF50",
+              color: "white",
+              border: "none",
+              borderRadius: "5px",
+              cursor: "pointer",
+            }}
+          >
+            OK
+          </button>
         </div>
-      )}
-
-      {/* Modal Overlay */}
-      {selectedAndy && (
-        <ClaimMyProfile
-          andy={selectedAndy}
-          onClose={closeModal}
-          onSubmit={handleEmailSubmit}
-        />
       )}
     </div>
   );

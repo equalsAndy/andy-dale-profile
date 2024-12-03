@@ -6,7 +6,7 @@ const sendAdminMessage = async (req, res) => {
   console.log('sendAdminMessage route hit');
   const { subject, message, email } = req.body;
 
-  const userId = 2; // Default user_id
+  const profileId = 2; // Default profile_id
   const to = 'equalsandy@gmail.com'; // Default recipient_email
 
   if (!subject || !message) {
@@ -20,10 +20,10 @@ const sendAdminMessage = async (req, res) => {
     const [results] = await db.query(
       `
       INSERT INTO messages 
-      (user_id, recipient_email, subject, body, sent_at, status, sender_email) 
+      (profile_id, recipient_email, subject, body, sent_at, status, sender_email) 
       VALUES (?, ?, ?, ?, NOW(), ?, ?)
       `,
-      [userId, to, subject, message, status, email || null]
+      [profileId, to, subject, message, status, email || null]
     );
 
     const messageId = results.insertId;
@@ -83,10 +83,10 @@ const sendAdminMessage = async (req, res) => {
   }
 };
 
-// Function to add an email for a user
+// Function to add an email for a profile
 const addEmail = async (req, res) => {
   const {
-    userId,
+    profileId,
     emailAddress,
     isPrimary = 0,
     allowAdminContact = 1,
@@ -94,18 +94,18 @@ const addEmail = async (req, res) => {
     allowPublicContact = 0,
   } = req.body;
 
-  if (!userId || !emailAddress) {
-    return res.status(400).send('userId and emailAddress are required');
+  if (!profileId || !emailAddress) {
+    return res.status(400).send('profileId and emailAddress are required');
   }
 
   try {
     await db.query(
       `
       INSERT INTO emails 
-      (user_id, email_address, is_primary, allow_admin_contact, allow_andy_contact, allow_public_contact) 
+      (profile_id, email_address, is_primary, allow_admin_contact, allow_andy_contact, allow_public_contact) 
       VALUES (?, ?, ?, ?, ?, ?)
       `,
-      [userId, emailAddress, isPrimary, allowAdminContact, allowAndyContact, allowPublicContact]
+      [profileId, emailAddress, isPrimary, allowAdminContact, allowAndyContact, allowPublicContact]
     );
     res.status(201).json({ message: 'Email added successfully' });
   } catch (err) {
@@ -119,7 +119,7 @@ const addEmail = async (req, res) => {
   }
 };
 
-// Function to update an email for a user
+// Function to update an email for a profile
 const updateEmail = async (req, res) => {
   const { emailId, emailAddress, isPrimary, verified } = req.body;
 
@@ -170,16 +170,16 @@ const deleteEmail = async (req, res) => {
   }
 };
 
-// Function to get all emails for a user
+// Function to get all emails for a profile
 const getEmails = async (req, res) => {
-  const { userId } = req.body;
+  const { profileId } = req.body;
 
-  if (!userId) {
-    return res.status(400).send('userId is required');
+  if (!profileId) {
+    return res.status(400).send('profileId is required');
   }
 
   try {
-    const [results] = await db.query('SELECT * FROM emails WHERE user_id = ?', [userId]);
+    const [results] = await db.query('SELECT * FROM emails WHERE profile_id = ?', [profileId]);
     res.json(results);
   } catch (err) {
     console.error('Error fetching emails:', err);
