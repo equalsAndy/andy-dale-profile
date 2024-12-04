@@ -112,7 +112,7 @@ passport.deserializeUser(async (user, done) => {
 
     if (result) {
       const account = result; // Explicitly use the first result object
-      //console.log("account: " + JSON.stringify(account));
+      console.log("account: " + JSON.stringify(account));
 
       const deserializedUser = {
         displayName: user.displayName || user.name || user.nickname,
@@ -120,7 +120,7 @@ passport.deserializeUser(async (user, done) => {
         picture: user.picture || '/default-avatar.png', // Default picture
       };
 
-      if (account != [])
+      if (account.length>0 )
       {
         deserializedUser.id= account[0].account_id;
         deserializedUser.username= account[0].username;

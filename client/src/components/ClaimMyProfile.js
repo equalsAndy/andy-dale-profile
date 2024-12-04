@@ -7,8 +7,8 @@ const ClaimMyProfile = ({ andy, user, onClose, onSubmit }) => {
 
   // Initialize email from the user prop
   useEffect(() => {
-    if (user && user._json && user._json.email) {
-      setEmail(user._json.email); // Populate the email field with the user's email
+    if (user && user.user && user.user.email) {
+      setEmail(user.user.email); // Populate the email field with the user's email
     }
   }, [user]);
 
