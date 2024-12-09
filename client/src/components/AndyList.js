@@ -31,7 +31,7 @@ const AndyList = ({ user }) => {
   useEffect(() => {
     const fetchAndys = async () => {
       try {
-        const response = await fetch(`${apiUrl}/api/andys`);
+        const response = await fetch(`${apiUrl}/api/profiles`);
         const data = await response.json();
         setAndys(data);
         setFilteredAndys(data);
@@ -52,11 +52,17 @@ const AndyList = ({ user }) => {
         (andy.job_title &&
           andy.job_title.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (andy.location_city &&
-          andy.location_city.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          andy.location_city
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase())) ||
         (andy.location_state &&
-          andy.location_state.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          andy.location_state
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase())) ||
         (andy.location_country &&
-          andy.location_country.toLowerCase().includes(searchTerm.toLowerCase()))
+          andy.location_country
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()))
     );
     setFilteredAndys(results);
   }, [searchTerm, andys]);
@@ -73,25 +79,29 @@ const AndyList = ({ user }) => {
     alert("Coming Soon!!");
   };
 
-  const handleEmailSubmit = async (
+  const handleEmailSubmit = (andy) => {
+    alert("Coming Soon!!");
+  };
+
+  const handleClaimProfile = async (
     andy,
     email,
     allowAndyContact,
     allowPublicContact
   ) => {
-    if (!email || !andy) {
-      console.error("Missing required arguments for handleEmailSubmit");
+    if (!andy) {
+      console.error("Missing required arguments for handleClaimProfile");
       return;
     }
 
     try {
-      const response = await fetch(`${apiUrl}/api/addEmail`, {
+      const response = await fetch(`${apiUrl}/api/claimProfile`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include", // Include cookies for authentication
         body: JSON.stringify({
-          userId: andy.profile_id,
-          emailAddress: email,
-          isPrimary: 1, // Default to primary email
+          profileId: andy.profile_id,
+          email: email,
           allowAdminContact: true, // Admin contact is always true
           allowAndyContact, // User-defined preference
           allowPublicContact, // User-defined preference
@@ -99,13 +109,13 @@ const AndyList = ({ user }) => {
       });
 
       if (response.ok) {
-        const updatedResponse = await fetch(`${apiUrl}/api/andys`);
+        const updatedResponse = await fetch(`${apiUrl}/api/profiles`);
         if (updatedResponse.ok) {
           const updatedData = await updatedResponse.json();
           setAndys(updatedData);
           setSelectedAndy(null); // Close the modal after successful update
         } else {
-          console.error("Failed to fetch updated Andys after email submission.");
+          console.error("Failed to fetch updated Andys after profile claim.");
         }
       } else if (response.status === 409) {
         setSelectedAndy(null); // Close the claim modal
@@ -113,10 +123,10 @@ const AndyList = ({ user }) => {
           "It appears that you have already claimed a profile. If you think this is an error, please message the admin using the button above."
         ); // Set the dialog content
       } else {
-        console.error("Failed to add email. Please try again.");
+        console.error("Failed to claim profile. Please try again.");
       }
     } catch (error) {
-      console.error("Error adding email:", error);
+      console.error("Error claiming profile:", error);
     }
   };
 
@@ -130,7 +140,7 @@ const AndyList = ({ user }) => {
 
   return (
     <div style={{ textAlign: "center", marginTop: "50px" }}>
-      <h2>List of Andy Profiles</h2>
+      <h2>List of Andy Profiles </h2>
 
       <input
         type="text"
@@ -155,67 +165,59 @@ const AndyList = ({ user }) => {
       >
         <thead>
           <tr>
-            <th style={{ borderBottom: "1px solid #ddd", padding: "10px" }}>
-              Name
-            </th>
-            <th style={{ borderBottom: "1px solid #ddd", padding: "10px" }}>
-              Job Title
-            </th>
-            <th style={{ borderBottom: "1px solid #ddd", padding: "10px" }}>
-              Company
-            </th>
-            <th style={{ borderBottom: "1px solid #ddd", padding: "10px" }}>
-              Location
-            </th>
-            <th style={{ borderBottom: "1px solid #ddd", padding: "10px" }}>
-              Action
-            </th>
+            <th>Name</th>
+            <th>Job Title</th>
+            <th>Company</th>
+            <th>Location</th>
+            <th>Action</th>
           </tr>
         </thead>
+
         <tbody>
-          {filteredAndys.map((andy) => (
-            <tr key={andy.profile_id} style={{ textAlign: "left" }}>
-              <td style={{ borderBottom: "1px solid #ddd", padding: "10px" }}>
-                {andy.first_name} {andy.last_name}
-              </td>
-              <td style={{ borderBottom: "1px solid #ddd", padding: "10px" }}>
-                {andy.job_title || "Not specified"}
-              </td>
-              <td style={{ borderBottom: "1px solid #ddd", padding: "10px" }}>
-                {andy.company || "Not specified"}
-              </td>
-              <td style={{ borderBottom: "1px solid #ddd", padding: "10px" }}>
-                {andy.location_city &&
-                andy.location_state &&
-                andy.location_country
-                  ? `${andy.location_city}, ${andy.location_state}, ${andy.location_country}`
-                  : "Not specified"}
-              </td>
-              <td
-                style={{
-                  borderBottom: "1px solid #ddd",
-                  padding: "10px",
-                  textAlign: "center",
-                }}
-              >
-                {andy.has_email ? (
-                  andy.allow_andy_contact || andy.allow_public_contact ? (
-                    <MessageButton
-                      andy={andy}
-                      onMessage={handleMessageMeClick}
-                    />
-                  ) : null
-                ) : (
-                  <ClaimButton
-                    andy={andy}
-                    user={user}
-                    onClaim={handleThisIsMeClick}
-                  />
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
+  {filteredAndys.map((andy) => {
+    const isCurrentUser = user?.user.profile_id === andy.profile_id;
+    const isPending = isCurrentUser && andy.isVerified === 0; // Check if the current user's profile is not verified
+    const canMessage = andy.isVerified && (
+      andy.allow_public_contact ||
+      (andy.allow_andy_contact && user?.user.verified));
+
+    return (
+      <tr
+        key={andy.profile_id}
+        style={{
+          backgroundColor: isCurrentUser ? "#ffebcd" : "transparent", // Highlight "This is you" row
+        }}
+      >
+        <td>{andy.first_name} {andy.last_name}</td>
+        <td>{andy.job_title || "Not specified"}</td>
+        <td>{andy.company || "Not specified"}</td>
+        <td>
+          {andy.location_city && andy.location_state && andy.location_country
+            ? `${andy.location_city}, ${andy.location_state}, ${andy.location_country}`
+            : "Not specified"}
+        </td>
+        <td style={{ textAlign: "center" }}>
+          {isPending ? (
+            "Pending" // Show Pending if this is the user's row and it is not verified
+          ) : isCurrentUser ? (
+            "This is you" // Show This is you for verified profiles
+          ) : !user?.user.profile_id && !andy.hasAccount ? (
+            <ClaimButton
+              andy={andy}
+              user={user}
+              onClaim={handleThisIsMeClick}
+            />
+          ) : canMessage ? (
+            <MessageButton
+              andy={andy}
+              onMessage={handleMessageMeClick}
+            />
+          ) : null}
+        </td>
+      </tr>
+    );
+  })}
+</tbody>
       </table>
 
       {/* Modal for Email Form */}
@@ -224,7 +226,7 @@ const AndyList = ({ user }) => {
           andy={selectedAndy}
           user={user}
           onClose={closeModal}
-          onSubmit={handleEmailSubmit}
+          onSubmit={handleClaimProfile}
         />
       )}
 

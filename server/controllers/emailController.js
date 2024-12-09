@@ -1,4 +1,4 @@
-const db = require('../db');
+const emailManager = require('../managers/email');
 const sendEmailUtil = require('../utils/sendEmail');
 
 // Function to send an email
@@ -16,20 +16,9 @@ const sendAdminMessage = async (req, res) => {
   const status = 'pending';
 
   try {
-    // Insert the message into the database
-    const [results] = await db.query(
-      `
-      INSERT INTO messages 
-      (profile_id, recipient_email, subject, body, sent_at, status, sender_email) 
-      VALUES (?, ?, ?, ?, NOW(), ?, ?)
-      `,
-      [profileId, to, subject, message, status, email || null]
-    );
-
-    const messageId = results.insertId;
+    const messageId = await emailManager.createMessage(profileId, to, subject, message, status, email);
 
     try {
-      // Send the email using the utility
       const emailResponse = await sendEmailUtil({
         to,
         subject,
@@ -39,14 +28,10 @@ const sendAdminMessage = async (req, res) => {
 
       const finalStatus = emailResponse.success ? 'sent' : 'failed';
 
-      // Update the message status after attempting to send
-      await db.query(
-        `
-        UPDATE messages 
-        SET status = ?, failure_reason = ? 
-        WHERE message_id = ?
-        `,
-        [finalStatus, emailResponse.success ? null : emailResponse.error?.message || 'Unknown error', messageId]
+      await emailManager.updateMessageStatus(
+        messageId,
+        finalStatus,
+        emailResponse.success ? null : emailResponse.error?.message || 'Unknown error'
       );
 
       if (emailResponse.success) {
@@ -64,21 +49,11 @@ const sendAdminMessage = async (req, res) => {
       }
     } catch (emailError) {
       console.error('Error sending email:', emailError);
-
-      // Update message status to 'failed' in case of an exception
-      await db.query(
-        `
-        UPDATE messages 
-        SET status = 'failed', failure_reason = ? 
-        WHERE message_id = ?
-        `,
-        [emailError.message, messageId]
-      );
-
+      await emailManager.updateMessageStatus(messageId, 'failed', emailError.message);
       res.status(500).send('Error sending email');
     }
-  } catch (dbError) {
-    console.error('Error saving message to the database:', dbError);
+  } catch (err) {
+    console.error('Error saving message to the database:', err);
     res.status(500).send('Error saving message');
   }
 };
@@ -99,14 +74,7 @@ const addEmail = async (req, res) => {
   }
 
   try {
-    await db.query(
-      `
-      INSERT INTO emails 
-      (profile_id, email_address, is_primary, allow_admin_contact, allow_andy_contact, allow_public_contact) 
-      VALUES (?, ?, ?, ?, ?, ?)
-      `,
-      [profileId, emailAddress, isPrimary, allowAdminContact, allowAndyContact, allowPublicContact]
-    );
+    await emailManager.addEmail(profileId, emailAddress, isPrimary, allowAdminContact, allowAndyContact, allowPublicContact);
     res.status(201).json({ message: 'Email added successfully' });
   } catch (err) {
     if (err.code === 'ER_DUP_ENTRY') {
@@ -128,16 +96,9 @@ const updateEmail = async (req, res) => {
   }
 
   try {
-    const [results] = await db.query(
-      `
-      UPDATE emails 
-      SET email_address = ?, is_primary = ?, verified = ? 
-      WHERE email_id = ?
-      `,
-      [emailAddress, isPrimary || 0, verified || 0, emailId]
-    );
+    const affectedRows = await emailManager.updateEmail(emailId, emailAddress, isPrimary, verified);
 
-    if (results.affectedRows === 0) {
+    if (affectedRows === 0) {
       return res.status(404).send('Email not found');
     }
 
@@ -157,9 +118,9 @@ const deleteEmail = async (req, res) => {
   }
 
   try {
-    const [results] = await db.query('DELETE FROM emails WHERE email_id = ?', [emailId]);
+    const affectedRows = await emailManager.deleteEmail(emailId);
 
-    if (results.affectedRows === 0) {
+    if (affectedRows === 0) {
       return res.status(404).send('Email not found');
     }
 
@@ -179,8 +140,8 @@ const getEmails = async (req, res) => {
   }
 
   try {
-    const [results] = await db.query('SELECT * FROM emails WHERE profile_id = ?', [profileId]);
-    res.json(results);
+    const emails = await emailManager.getEmails(profileId);
+    res.json(emails);
   } catch (err) {
     console.error('Error fetching emails:', err);
     res.status(500).send('Error fetching emails');

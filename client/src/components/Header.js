@@ -24,15 +24,15 @@ const Header = () => {
           setUser(userData.user);
   
           // Ensure account exists for the logged-in user
-          const email = userData._json?.email || userData.emails?.[0]?.value;
-          if (email) {
+      
+          if (userData.user) {
             const ensureAccountResponse = await fetch(`${apiUrl}/api/ensure-account`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
               },
               credentials: 'include',
-              body: JSON.stringify({ email }),
+              body: JSON.stringify( userData.user ),
             });
   
             if (!ensureAccountResponse.ok) {

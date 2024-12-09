@@ -9,11 +9,11 @@ const Auth0Strategy = require('passport-auth0');
 
 const db = require('./db');
 const {
-  addAndy,
+  addProfile,
   getLocations,
   getTitles,
-  getAndys,
-} = require('./controllers/andyController');
+  getProfiles,
+} = require('./controllers/profileController');
 const {
   addEmail,
   updateEmail,
@@ -22,7 +22,7 @@ const {
   sendAdminMessage,
 } = require('./controllers/emailController');
 
-const { ensureAccountExists } = require('./controllers/userController');
+const { ensureAccountExists, claimProfile } = require('./controllers/userController');
 
 const app = express();
 const PORT = process.env.SERVER_PORT || 5001;
@@ -106,7 +106,7 @@ passport.deserializeUser(async (user, done) => {
 
     // Fetch the account from the database
     const [result] = await db.query(
-      'SELECT account_id, username, verified FROM accounts WHERE username = ?',
+      'SELECT account_id, username, verified, profile_id FROM accounts WHERE username = ?',
       [email]
     );
 
@@ -122,7 +122,9 @@ passport.deserializeUser(async (user, done) => {
 
       if (account.length>0 )
       {
+        
         deserializedUser.id= account[0].account_id;
+        deserializedUser.profile_id= account[0].profile_id;
         deserializedUser.username= account[0].username;
         deserializedUser.verified= account[0].verified === 1; // Convert verified field to boolean
       }
@@ -220,13 +222,14 @@ app.get('/api/user', (req, res) => {
 // API routes
 // Add this route to handle account creation
 app.post('/api/ensure-account', ensureAccountExists);
+app.post('/api/claimProfile', claimProfile);
 
 
 app.post('/api/sendAdminMessage', sendAdminMessage);
-app.post('/api/add-andy', addAndy);
+app.post('/api/add-profile', addProfile);
 app.get('/api/locations', getLocations);
 app.get('/api/titles', getTitles);
-app.get('/api/andys', getAndys);
+app.get('/api/profiles', getProfiles);
 app.post('/api/add-email', addEmail);
 app.post('/api/addEmail', addEmail);
 app.post('/api/update-email', updateEmail);
