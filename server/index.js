@@ -20,6 +20,7 @@ const {
   deleteEmail,
   getEmails,
   sendAdminMessage,
+  sendAndyToAndyMessage,
 } = require('./controllers/emailController');
 
 const { ensureAccountExists, claimProfile } = require('./controllers/userController');
@@ -226,6 +227,7 @@ app.post('/api/claimProfile', claimProfile);
 
 
 app.post('/api/sendAdminMessage', sendAdminMessage);
+app.post('/api/sendAndyToAndyMessage', sendAndyToAndyMessage);
 app.post('/api/add-profile', addProfile);
 app.get('/api/locations', getLocations);
 app.get('/api/titles', getTitles);

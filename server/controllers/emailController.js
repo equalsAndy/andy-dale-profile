@@ -1,7 +1,83 @@
+
+const { v4: uuidv4 } = require('uuid'); // For generating unique UUIDs
 const emailManager = require('../managers/email');
 const sendEmailUtil = require('../utils/sendEmail');
 
-// Function to send an email
+
+
+// Function to send an Andy-to-Andy message
+const sendAndyToAndyMessage = async (req, res) => {
+  console.log('sendAndyToAndyMessage route hit');
+  const { subject, message, senderAccountId, recipientProfileId } = req.body;
+
+  if (!subject || !message || !senderAccountId || !recipientProfileId) {
+    return res.status(400).send('Subject, message, senderAccountId, and recipientProfileId are required');
+  }
+
+  const status = 'pending';
+  const uuid = uuidv4(); // Generate a unique UUID
+  const anonymizedEmail = `${uuid}@andydale.me`; // Anonymized email address
+
+  try {
+    // Step 1: Fetch recipient's primary email
+    const recipientEmail = await emailManager.getPrimaryEmailByProfileId(recipientProfileId);
+    if (!recipientEmail) {
+      return res.status(404).send('Recipient does not have a primary email');
+    }
+
+    // Step 2: Save the message to the database with the anonymized email
+    const messageId = await emailManager.createMessage(
+      senderAccountId, // Key the alias against the sender's account_id
+      anonymizedEmail, // Anonymized sender email
+      recipientEmail,  // Recipient's primary email
+      subject,
+      message,
+      status
+    );
+
+    // Step 3: Save the alias mapping (UUID -> senderAccountId) to the emailAlias table
+    await emailManager.createEmailAlias(uuid, senderAccountId);
+
+    // Step 4: Send the email
+    const emailResponse = await sendEmailUtil({
+      from: anonymizedEmail,
+      to: recipientEmail,
+      subject,
+      text: `from: ${anonymizedEmail}\n\nMessage: ${message}`, // Plain text email
+      html: null, // No HTML content
+    });
+
+    // Step 5: Update the message status in the database
+    const finalStatus = emailResponse.success ? 'sent' : 'failed';
+    await emailManager.updateMessageStatus(
+      messageId,
+      finalStatus,
+      emailResponse.success ? null : emailResponse.error?.message || 'Unknown error'
+    );
+
+    // Step 6: Respond to the client
+    if (emailResponse.success) {
+      res.status(200).json({
+        messageId,
+        emailMessageId: emailResponse.messageId,
+        alias: anonymizedEmail,
+        message: 'Email sent and saved successfully',
+      });
+    } else {
+      res.status(500).json({
+        messageId,
+        error: emailResponse.error?.message || 'Failed to send email',
+        message: 'Email sending failed',
+      });
+    }
+  } catch (err) {
+    console.error('Error processing Andy-to-Andy message:', err);
+    res.status(500).send('Error processing message');
+  }
+};
+
+
+// Function to send an email to admin
 const sendAdminMessage = async (req, res) => {
   console.log('sendAdminMessage route hit');
   const { subject, message, email } = req.body;
@@ -18,12 +94,14 @@ const sendAdminMessage = async (req, res) => {
   try {
     const messageId = await emailManager.createMessage(profileId, to, subject, message, status, email);
 
+    const from = email || "Unknown";
     try {
       const emailResponse = await sendEmailUtil({
+        from,
         to,
         subject,
-        text: message, // Plain text email
-        html: null,    // No HTML content
+        text: "from: " + from + "\n\nMessage: " + message, // Plain text email with a new line
+        html: null, // No HTML content
       });
 
       const finalStatus = emailResponse.success ? 'sent' : 'failed';
@@ -149,6 +227,7 @@ const getEmails = async (req, res) => {
 };
 
 module.exports = {
+  sendAndyToAndyMessage,
   sendAdminMessage,
   addEmail,
   updateEmail,

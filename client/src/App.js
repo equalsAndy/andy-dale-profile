@@ -111,7 +111,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home user={user} />} /> {/* Pass user to Home */}
           <Route path="/add-andy" element={<AddAndy />} />
-          <Route path="/andy-list" element={<AndyList user={user} />} /> {/* Pass user to AndyList */}
+          <Route path="/andy-list" element={<AndyList user={user} setUser={setUser} />} />
           <Route path="/contact-admin" element={<ContactAdmin />} />
         </Routes>
       </div>

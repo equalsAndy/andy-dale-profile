@@ -92,9 +92,16 @@ const getProfiles = async () => {
   return results;
 };
 
+// Delete a profile by ID
+const deleteProfile = async (profileId) => {
+  const sql = `DELETE FROM profile WHERE profile_id = ?`;
+  await db.query(sql, [profileId]);
+};
+
 module.exports = {
   addProfile,
   getLocations,
   getTitles,
   getProfiles,
+  deleteProfile
 };

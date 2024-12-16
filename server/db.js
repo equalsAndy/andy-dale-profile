@@ -1,5 +1,8 @@
-// db.js
+
 const mysql = require('mysql2');
+require('dotenv').config(); // Load environment variables
+
+
 
 // Create a connection pool
 const pool = mysql.createPool({
@@ -7,10 +10,17 @@ const pool = mysql.createPool({
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE,
-  waitForConnections: true,   // Ensures queued requests wait for a free connection
-  connectionLimit: 10,        // Max number of connections in the pool
-  queueLimit: 0               // No limit for queued requests
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
 });
 
-// Export the pool with promise support for async/await
-module.exports = pool.promise();
+// Export the `pool.promise()` directly for use in query operations
+const db = pool.promise();
+
+// Add a `close` method to explicitly close the pool
+db.close = async () => {
+  await pool.end();
+};
+
+module.exports = db;

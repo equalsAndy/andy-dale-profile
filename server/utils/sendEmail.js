@@ -1,7 +1,7 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
-const sendEmail = async ({ to, subject, text, html }) => {
+const sendEmail = async ({ from, to, subject, text, html }) => {
   try {
     // Configure the transporter
     const transporter = nodemailer.createTransport({
@@ -16,11 +16,12 @@ const sendEmail = async ({ to, subject, text, html }) => {
 
     // Email options
     const mailOptions = {
-      from: `"Andy Dale Project" <${process.env.SMTP_USER}>`, // Sender address
+      from, // Sender address
       to, // Recipient email address
       subject, // Subject line
       text, // Plain text body
       html, // HTML body (optional)
+      replyTo:from,
     };
 
     // Send the email

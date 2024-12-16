@@ -1,15 +1,40 @@
 const db = require('../db');
 
-const createMessage = async (profileId, recipientEmail, subject, body, status, senderEmail) => {
-  const [results] = await db.query(
-    `
-    INSERT INTO messages 
-    (profile_id, recipient_email, subject, body, sent_at, status, sender_email) 
-    VALUES (?, ?, ?, ?, NOW(), ?, ?)
-    `,
-    [profileId, recipientEmail, subject, body, status, senderEmail || null]
-  );
-  return results.insertId;
+
+const getPrimaryEmailByProfileId = async (profileId) => {
+  const query = `
+    SELECT email_address
+    FROM emails
+    WHERE profile_id = ? AND is_primary = 1
+    LIMIT 1
+  `;
+  const [rows] = await db.execute(query, [profileId]);
+  return rows.length > 0 ? rows[0].email_address : null;
+};
+
+const createMessage = async (senderAccountId, anonymizedEmail, recipientEmail, subject, body, status) => {
+  const query = `
+    INSERT INTO messages (
+      sender_email,
+      anonymized_sender_email,
+      recipient_email,
+      subject,
+      body,
+      status
+    ) VALUES (?, ?, ?, ?, ?, ?)
+  `;
+  const params = [senderAccountId, anonymizedEmail, recipientEmail, subject, body, status];
+  const [result] = await db.execute(query, params);
+  return result.insertId; // Return the message ID
+};
+
+const createEmailAlias = async (uuid, accountId) => {
+  const query = `
+    INSERT INTO emailAlias (uuid, account_id)
+    VALUES (?, ?)
+  `;
+  const params = [uuid, accountId];
+  await db.execute(query, params);
 };
 
 const updateMessageStatus = async (messageId, status, failureReason) => {
@@ -57,6 +82,8 @@ const getEmails = async (profileId) => {
 };
 
 module.exports = {
+  createEmailAlias,
+  getPrimaryEmailByProfileId,
   createMessage,
   updateMessageStatus,
   addEmail,
