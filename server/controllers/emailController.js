@@ -77,61 +77,68 @@ const sendAndyToAndyMessage = async (req, res) => {
 };
 
 
-// Function to send an email to admin
 const sendAdminMessage = async (req, res) => {
   console.log('sendAdminMessage route hit');
   const { subject, message, email } = req.body;
 
-  const profileId = 2; // Default profile_id for admin messages
-  const to = 'equalsandy@gmail.com'; // Default recipient email address
+  const profileId = 2; // Default profile_id
+  const to = 'equalsandy@gmail.com'; // Default recipient_email
 
   if (!subject || !message) {
     return res.status(400).send('Subject and message are required');
   }
 
-  const status = 'pending';
+  const status = 'pending'; // Start with 'pending'
 
   try {
-    // Step 1: Save the message to the database
-    const messageId = await emailManager.createMessage(profileId, to, subject, message, status, email);
-
-    // Step 2: Prepare sender's email
-    const from = email || 'Unknown';
-
-    // Step 3: Send the email
-    const emailResponse = await sendEmailUtil({
-      from,
+    const messageId = await emailManager.createMessage(
+      profileId,
+      null, // sender_email
       to,
       subject,
-      text: `from: ${from}\n\nMessage: ${message}`, // Plain text email
-      html: null, // No HTML content
-    });
-
-    // Step 4: Update the message status in the database
-    const finalStatus = emailResponse.success ? 'sent' : 'failed';
-    await emailManager.updateMessageStatus(
-      messageId,
-      finalStatus,
-      emailResponse.success ? null : emailResponse.error?.message || 'Unknown error'
+      message,
+      status
     );
 
-    // Step 5: Respond to the client
-    if (emailResponse.success) {
-      res.status(200).json({
-        messageId,
-        emailMessageId: emailResponse.messageId,
-        message: 'Email sent and saved successfully',
+    const from = email || "Unknown";
+    try {
+      const emailResponse = await sendEmailUtil({
+        from,
+        to,
+        subject,
+        text: `from: ${from}\n\nMessage: ${message}`,
+        html: null,
       });
-    } else {
-      res.status(500).json({
+
+      const finalStatus = emailResponse.success ? 'sent' : 'failed';
+
+      await emailManager.updateMessageStatus(
         messageId,
-        error: emailResponse.error?.message || 'Failed to send email',
-        message: 'Email sending failed',
-      });
+        finalStatus,
+        emailResponse.success ? null : emailResponse.error?.message || 'Unknown error'
+      );
+
+      if (emailResponse.success) {
+        res.status(200).json({
+          messageId,
+          emailMessageId: emailResponse.messageId,
+          message: 'Email sent and saved successfully',
+        });
+      } else {
+        res.status(500).json({
+          messageId,
+          error: emailResponse.error?.message || 'Failed to send email',
+          message: 'Email sending failed',
+        });
+      }
+    } catch (emailError) {
+      console.error('Error sending email:', emailError);
+      await emailManager.updateMessageStatus(messageId, 'failed', emailError.message);
+      res.status(500).send('Error sending email');
     }
   } catch (err) {
-    console.error('Error processing admin message:', err);
-    res.status(500).send('Error processing admin message');
+    console.error('Error saving message to the database:', err);
+    res.status(500).send('Error saving message');
   }
 };
 

@@ -13,6 +13,11 @@ const getPrimaryEmailByProfileId = async (profileId) => {
 };
 
 const createMessage = async (senderAccountId, anonymizedEmail, recipientEmail, subject, body, status) => {
+  const allowedStatuses = ['pending', 'sent', 'failed'];
+  if (!allowedStatuses.includes(status)) {
+    throw new Error(`Invalid status value: ${status}. Allowed values are: ${allowedStatuses.join(', ')}`);
+  }
+
   const query = `
     INSERT INTO messages (
       sender_email,
