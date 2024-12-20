@@ -75,9 +75,33 @@ const getProfiles = async (req, res) => {
   }
 };
 
+// ...existing code...
+
+// Function to get a profile by ID
+const getProfileById = async (req, res) => {
+  const { id } = req.body; // Extract ID from the request body
+
+  if (!id) {
+    return res.status(400).send('ID is required'); // Handle missing ID
+  }
+
+  try {
+    const profile = await profileManager.getProfileById(id);
+    if (profile) {
+      res.json(profile); // Send the profile as JSON
+    } else {
+      res.status(404).send('Profile not found'); // Handle non-existent profile
+    }
+  } catch (err) {
+    console.error(`Error fetching profile with ID ${id}:`, err);
+    res.status(500).send('Error fetching profile'); // Handle server error
+  }
+};
+
 module.exports = {
   addProfile,
   getLocations,
   getTitles,
   getProfiles,
+  getProfileById, // Add the new function to the exports
 };

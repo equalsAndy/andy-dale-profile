@@ -98,10 +98,22 @@ const deleteProfile = async (profileId) => {
   await db.query(sql, [profileId]);
 };
 
+const getProfileById = async (id) => {
+  try {
+    const sql = 'SELECT * FROM profile WHERE profile_id = ?';
+    const [rows] = await db.query(sql, [id]); // Use parameterized query
+    return rows[0]; // Access `rows` as per the MySQL module's return structure
+  } catch (err) {
+    console.error(`Error fetching profile with ID ${id}:`, err);
+    throw err;
+  }
+};
+
 module.exports = {
   addProfile,
   getLocations,
   getTitles,
   getProfiles,
+  getProfileById,
   deleteProfile
 };

@@ -13,6 +13,7 @@ const {
   getLocations,
   getTitles,
   getProfiles,
+  getProfileById,
 } = require('./controllers/profileController');
 const {
   addEmail,
@@ -236,7 +237,10 @@ app.post('/api/add-email', addEmail);
 app.post('/api/addEmail', addEmail);
 app.post('/api/update-email', updateEmail);
 app.post('/api/delete-email', deleteEmail);
+app.post('/api/get-profile', getProfileById);
 app.post('/api/get-emails', getEmails);
+
+
 
 
 

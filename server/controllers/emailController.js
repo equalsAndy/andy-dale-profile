@@ -10,8 +10,8 @@ const sendAndyToAndyMessage = async (req, res) => {
   console.log('sendAndyToAndyMessage route hit');
   const { subject, message, senderAccountId, recipientProfileId } = req.body;
 
-  if (!subject || !message || !senderAccountId || !recipientProfileId) {
-    return res.status(400).send('Subject, message, senderAccountId, and recipientProfileId are required');
+  if (!subject || !message || !recipientProfileId) {
+    return res.status(400).send('Subject, message, and recipientProfileId are required');
   }
 
   const status = 'pending';
@@ -25,9 +25,12 @@ const sendAndyToAndyMessage = async (req, res) => {
       return res.status(404).send('Recipient does not have a primary email');
     }
 
-    // Step 2: Save the message to the database with the anonymized email
+    // Step 2: Set sender email as "Unknown" if senderAccountId is not provided
+    const senderEmail = senderAccountId ? senderAccountId : 'Unknown';
+
+    // Step 3: Save the message to the database with the anonymized email
     const messageId = await emailManager.createMessage(
-      senderAccountId, // Key the alias against the sender's account_id
+      senderEmail, // Use 'Unknown' if senderAccountId is null
       anonymizedEmail, // Anonymized sender email
       recipientEmail,  // Recipient's primary email
       subject,
@@ -35,10 +38,12 @@ const sendAndyToAndyMessage = async (req, res) => {
       status
     );
 
-    // Step 3: Save the alias mapping (UUID -> senderAccountId) to the emailAlias table
-    await emailManager.createEmailAlias(uuid, senderAccountId);
+    // Step 4: Save the alias mapping if senderAccountId exists
+    if (senderAccountId) {
+      await emailManager.createEmailAlias(uuid, senderAccountId);
+    }
 
-    // Step 4: Send the email
+    // Step 5: Send the email
     const emailResponse = await sendEmailUtil({
       from: anonymizedEmail,
       to: recipientEmail,
@@ -47,7 +52,7 @@ const sendAndyToAndyMessage = async (req, res) => {
       html: null, // No HTML content
     });
 
-    // Step 5: Update the message status in the database
+    // Step 6: Update the message status in the database
     const finalStatus = emailResponse.success ? 'sent' : 'failed';
     await emailManager.updateMessageStatus(
       messageId,
@@ -55,7 +60,7 @@ const sendAndyToAndyMessage = async (req, res) => {
       emailResponse.success ? null : emailResponse.error?.message || 'Unknown error'
     );
 
-    // Step 6: Respond to the client
+    // Step 7: Respond to the client
     if (emailResponse.success) {
       res.status(200).json({
         messageId,

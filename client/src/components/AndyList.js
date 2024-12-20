@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from "react";
 import ClaimMyProfile from "./ClaimMyProfile";
 
+import { Link } from 'react-router-dom';
+
+
+
 const apiUrl = process.env.REACT_APP_API_URL;
 
 // Button to claim a profile
@@ -22,6 +26,11 @@ const MessageButton = ({ andy, onMessage }) => (
 );
 
 const AndyList = ({ user, setUser }) => {
+
+    //console.log("Andy List - Current user:", user);
+
+  const userProfileId = user?.user?.profile_id;
+  const userVerified = user?.user?.verified;
   const [andys, setAndys] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredAndys, setFilteredAndys] = useState([]);
@@ -35,12 +44,16 @@ const AndyList = ({ user, setUser }) => {
     try {
       setLoading(true); // Start loading
       const response = await fetch(`${apiUrl}/api/profiles`);
-      const data = await response.json();
-      console.log("in fetchAndys - new data fetched:", data);
+      if (response.ok) {
+        const data = await response.json();
+        console.log("in fetchAndys - new data fetched:", data);
 
-      // Update state with fetched data
-      setAndys([...data]);
-      setFilteredAndys(data);
+      setAndys(data);
+        setAndys([...data]);
+        setFilteredAndys(data);
+      } else {
+        console.error("Failed to fetch Andy profiles:", response.statusText);
+      }
     } catch (error) {
       console.error("Error fetching Andy profiles:", error);
     } finally {
@@ -57,7 +70,8 @@ const AndyList = ({ user, setUser }) => {
         console.log("Updated current user:", updatedUser);
         setUser(updatedUser); // Update the user state
       } else {
-        console.error("Failed to fetch current user data.");
+        const error = new Error(response.statusText);
+        console.error("Failed to fetch current user data:", error.message);
       }
     } catch (error) {
       console.error("Error fetching current user data:", error);
@@ -93,7 +107,6 @@ const AndyList = ({ user, setUser }) => {
     );
     setFilteredAndys(results);
   }, [searchTerm, andys]);
-
   const handleThisIsMeClick = (andy) => {
     if (!user) {
       alert("You need to log in to claim a profile.");
@@ -102,16 +115,23 @@ const AndyList = ({ user, setUser }) => {
     setSelectedAndy(andy);
   };
 
-
   const handleMessageMeClick = async (andy) => {
-    console.log("handleMessageMeClick - user - "+ JSON.stringify(user));
-    if (!user.user || !user.user.id) {
-      alert("You must be logged in to send a message.");
-      return;
+    console.log("handleMessageMeClick - user - ", user);
+  
+    // Determine sender name based on user status
+    let senderName = "Anonymous";
+    let senderAccountId = null;
+  
+    if (user?.user) {
+      senderAccountId = user.user.id; // Logged-in user's ID
+  
+      // If user is verified, set sender name to 'an Andy'
+      senderName = user.user.verified ? "an Andy" : "Anonymous";
     }
   
-    const subject = `Message from ${user.name || "Anonymous"} via AndyDale.me`;
+    const subject = `Message from ${senderName} via AndyDale.me`;
     const message = prompt(`Enter your message for ${andy.first_name} ${andy.last_name}:`);
+  
     if (!message) {
       alert("Message cannot be empty.");
       return;
@@ -123,7 +143,7 @@ const AndyList = ({ user, setUser }) => {
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          senderAccountId: user.account_id, // Logged-in user's account_id
+          senderAccountId, // Logged-in user's account_id or null for guests
           recipientProfileId: andy.profile_id, // Recipient's profile_id
           subject,
           message,
@@ -240,11 +260,11 @@ const AndyList = ({ user, setUser }) => {
 
         <tbody>
           {filteredAndys.map((andy) => {
-            const isCurrentUser = user?.user.profile_id === andy.profile_id;
+            const isCurrentUser = userProfileId === andy.profile_id;
             const isPending = isCurrentUser && andy.isVerified === 0; // Check if the current user's profile is not verified
             const canMessage =
               andy.allow_public_contact ||
-              (andy.allow_andy_contact && user?.user.verified);
+              (andy.allow_andy_contact && userVerified);
 
             return (
               <tr
@@ -265,8 +285,11 @@ const AndyList = ({ user, setUser }) => {
                   {isPending ? (
                     "Pending" // Show Pending if this is the user's row and it is not verified
                   ) : isCurrentUser ? (
-                    "This is you" // Show This is you for verified profiles
-                  ) : !user?.user.profile_id && !andy.hasAccount ? (
+                    <Link to="/profile">
+        <button>View My Profile</button>
+      </Link>
+                  
+                  ) : !userProfileId && !andy.hasAccount ? (
                     <ClaimButton
                       andy={andy}
                       user={user}
@@ -288,6 +311,7 @@ const AndyList = ({ user, setUser }) => {
       {/* Modal for Email Form */}
       {selectedAndy && (
         <ClaimMyProfile
+          key={selectedAndy.profile_id}
           andy={selectedAndy}
           user={user}
           onClose={closeModal}
