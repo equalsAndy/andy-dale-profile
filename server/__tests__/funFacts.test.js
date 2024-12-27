@@ -85,7 +85,7 @@ describe('Fun Fact Controller Tests', () => {
       funFactData.description
     );
 
-    const req = { params: { factId: testFunFactId } }; // Provide valid factId
+    const req = { body: { factId: testFunFactId } }; // Provide valid factId
     const res = {
       status: jest.fn(() => res),
       json: jest.fn(),
