@@ -1,33 +1,52 @@
 import React, { useState, useEffect } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
+import ProfileFields from './ProfileFields';
+import FunFacts from './FunFacts';
 
-const UserProfile = ({ user }) => {
+const UserProfile = ({ user: initialUser }) => {
+  const [user, setUser] = useState(() => {
+    const storedUser = localStorage.getItem('user');
+    return storedUser ? JSON.parse(storedUser) : initialUser;
+  });
+
   const [profile, setProfile] = useState(null);
   const [editableProfile, setEditableProfile] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [message, setMessage] = useState(null); // For success/error messages
 
   const profile_id = user?.user?.profile_id;
   const apiUrl = process.env.REACT_APP_API_URL;
+  const navigate = useNavigate();
 
+  // Persist user in localStorage
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem('user', JSON.stringify(user));
+    }
+  }, [user]);
+
+  // Fetch profile data
   useEffect(() => {
     if (!profile_id) {
+      setLoading(false);
+      setError('Profile ID is missing');
       return;
     }
 
     const fetchProfile = async () => {
       try {
-        const response = await fetch(apiUrl + `/api/get-profile`, {
+        const response = await fetch(`${apiUrl}/api/get-profile`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 'id': ""+profile_id }),
+          body: JSON.stringify({ id: profile_id }),
         });
 
         if (response.ok) {
           const data = await response.json();
           setProfile(data);
-          setEditableProfile(data); // Initialize editable profile
+          setEditableProfile(data);
         } else {
           setError('Failed to fetch profile');
         }
@@ -42,152 +61,120 @@ const UserProfile = ({ user }) => {
     fetchProfile();
   }, [profile_id]);
 
+  // Handle Save Profile
+  const handleSaveProfile = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/api/update-profile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editableProfile),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setMessage({ text: data.message || 'Profile updated successfully!', type: 'success' });
+        setProfile(editableProfile); // Sync the original profile with the updated one
+        setIsEditing(false);
+      } else {
+        const errorData = await response.json();
+        setMessage({ text: errorData.message || 'Failed to update profile.', type: 'error' });
+      }
+    } catch (err) {
+      console.error('Error updating profile:', err);
+      setMessage({ text: 'An error occurred while saving the profile.', type: 'error' });
+    }
+
+    // Clear the message after 3 seconds
+    setTimeout(() => setMessage(null), 3000);
+  };
+
+  // Handle Cancel Edit
+  const handleCancelEdit = () => {
+    setEditableProfile({ ...profile }); // Revert changes
+    setIsEditing(false);
+  };
+
   if (!user) {
     alert('You have to be logged in to view this page. Please log back in.');
     return <Navigate to="/" />;
   }
 
-  // Handle input changes in the editable profile
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setEditableProfile((prev) => ({ ...prev, [name]: value }));
-  };
-
-  // Handle cancel (revert changes)
-  const handleCancel = () => {
-    setEditableProfile({ ...profile }); // Reset changes
-    setIsEditing(false);
-  };
-
-  // Placeholder save functionality
-  const handleSave = () => {
-    alert('Save functionality coming soon!');
-    setIsEditing(false);
-  };
-
   if (loading) return <div>Loading profile...</div>;
   if (error) return <div>{error}</div>;
 
   return (
-    <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
+    <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
+      {/* "Return to Andy List" Button */}
+      <button
+        onClick={() => navigate('/andy-list')}
+        style={{
+          backgroundColor: '#007BFF',
+          color: 'white',
+          border: 'none',
+          borderRadius: '5px',
+          padding: '10px 20px',
+          cursor: 'pointer',
+          marginBottom: '20px',
+        }}
+      >
+        Return to Andy List
+      </button>
+
       <h2>User Profile</h2>
-      <form>
-        <div style={{ marginBottom: '10px' }}>
-          <label>First Name:</label>
-          <input
-            type="text"
-            name="first_name"
-            value={editableProfile.first_name || ''}
-            onChange={handleInputChange}
-            disabled={!isEditing}
-          />
+
+      {/* Message Banner */}
+      {message && (
+        <div
+          style={{
+            marginBottom: '15px',
+            padding: '10px',
+            textAlign: 'center',
+            color: message.type === 'success' ? 'green' : 'red',
+            border: `1px solid ${message.type === 'success' ? 'green' : 'red'}`,
+            borderRadius: '5px',
+          }}
+        >
+          {message.text}
         </div>
-        <div style={{ marginBottom: '10px' }}>
-          <label>Last Name:</label>
-          <input
-            type="text"
-            name="last_name"
-            value={editableProfile.last_name || ''}
-            onChange={handleInputChange}
-            disabled={!isEditing}
-          />
-        </div>
-        <div style={{ marginBottom: '10px' }}>
-          <label>City:</label>
-          <input
-            type="text"
-            name="location_city"
-            value={editableProfile.location_city || ''}
-            onChange={handleInputChange}
-            disabled={!isEditing}
-          />
-        </div>
-        <div style={{ marginBottom: '10px' }}>
-          <label>State:</label>
-          <input
-            type="text"
-            name="location_state"
-            value={editableProfile.location_state || ''}
-            onChange={handleInputChange}
-            disabled={!isEditing}
-          />
-        </div>
-        <div style={{ marginBottom: '10px' }}>
-          <label>Country:</label>
-          <input
-            type="text"
-            name="location_country"
-            value={editableProfile.location_country || ''}
-            onChange={handleInputChange}
-            disabled={!isEditing}
-          />
-        </div>
-        <div style={{ marginBottom: '10px' }}>
-          <label>Job Title:</label>
-          <input
-            type="text"
-            name="job_title"
-            value={editableProfile.job_title || ''}
-            onChange={handleInputChange}
-            disabled={!isEditing}
-          />
-        </div>
-        <div style={{ marginBottom: '10px' }}>
-          <label>Company:</label>
-          <input
-            type="text"
-            name="company"
-            value={editableProfile.company || ''}
-            onChange={handleInputChange}
-            disabled={!isEditing}
-          />
-        </div>
-        <div style={{ marginBottom: '10px' }}>
-          <label>LinkedIn:</label>
-          <input
-            type="url"
-            name="linkedin_url"
-            value={editableProfile.linkedin_url || ''}
-            onChange={handleInputChange}
-            disabled={!isEditing}
-          />
-        </div>
-        <div style={{ marginBottom: '10px' }}>
-          <label>Email:</label>
-          <input
-            type="email"
-            name="contact_email"
-            value={editableProfile.contact_email || ''}
-            onChange={handleInputChange}
-            disabled={!isEditing}
-          />
-        </div>
-        <div>
+      )}
+
+      <ProfileFields
+        profile={profile}
+        editableProfile={editableProfile}
+        isEditing={isEditing}
+        handleInputChange={(e) =>
+          setEditableProfile((prev) => ({
+            ...prev,
+            [e.target.name]: e.target.value,
+          }))
+        }
+      />
+
+      {/* Edit, Save, and Cancel Buttons */}
+      <div style={{ textAlign: 'center', marginTop: '20px' }}>
+        {isEditing ? (
+          <>
+            <button
+              onClick={handleSaveProfile}
+              style={{ marginRight: '10px', backgroundColor: 'green', color: 'white' }}
+            >
+              Save
+            </button>
+            <button onClick={handleCancelEdit} style={{ backgroundColor: 'gray', color: 'white' }}>
+              Cancel
+            </button>
+          </>
+        ) : (
           <button
-            type="button"
             onClick={() => setIsEditing(true)}
-            style={{ marginRight: '10px' }}
-            disabled={isEditing}
+            style={{ backgroundColor: 'blue', color: 'white' }}
           >
             Edit
           </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            style={{ marginRight: '10px' }}
-            disabled={!isEditing}
-          >
-            Save
-          </button>
-          <button
-            type="button"
-            onClick={handleCancel}
-            disabled={!isEditing}
-          >
-            Cancel
-          </button>
-        </div>
-      </form>
+        )}
+      </div>
+
+      <FunFacts profileId={profile_id} apiUrl={apiUrl} />
     </div>
   );
 };

@@ -60,7 +60,7 @@ const ContactAdmin = () => {
   };
 
   return (
-    <div style={{ textAlign: 'center', marginTop: '50px' }}>
+    <div style={{ textAlign: 'center', marginTop: '10px' }}>
       <h2>Contact Admin</h2>
       {submitted ? (
         <div style={{ marginTop: '20px', color: '#4CAF50' }}>

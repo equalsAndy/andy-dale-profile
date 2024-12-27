@@ -2,7 +2,12 @@
 const mysql = require('mysql2');
 require('dotenv').config(); // Load environment variables
 
-
+console.log({
+  DB_HOST: process.env.DB_HOST,
+  DB_USER: process.env.DB_USER,
+  DB_PASSWORD: process.env.DB_PASSWORD ? '***' : null, // Mask password for safety
+  DB_DATABASE: process.env.DB_DATABASE,
+});
 
 // Create a connection pool
 const pool = mysql.createPool({

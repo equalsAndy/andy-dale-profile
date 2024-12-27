@@ -100,13 +100,68 @@ const deleteProfile = async (profileId) => {
 
 const getProfileById = async (id) => {
   try {
-    const sql = 'SELECT * FROM profile WHERE profile_id = ?';
-    const [rows] = await db.query(sql, [id]); // Use parameterized query
-    return rows[0]; // Access `rows` as per the MySQL module's return structure
+    const sql = `
+      SELECT 
+        p.profile_id, 
+        p.first_name, 
+        p.last_name, 
+        p.aka, 
+        p.bio, 
+        p.created_at, 
+        p.updated_at, 
+        p.location_city, 
+        p.location_state, 
+        p.location_country, 
+        p.job_title, 
+        p.company, 
+        p.years_of_experience, 
+        p.linkedin_url, 
+        p.personal_website_url, 
+        e.email_address 
+      FROM 
+        profile p
+      LEFT JOIN 
+        emails e
+      ON 
+        p.profile_id = e.profile_id AND e.is_primary = 1
+      WHERE 
+        p.profile_id = ?
+    `;
+    const [rows] = await db.query(sql, [id]);
+    return rows[0]; // Return the first (and only) result
   } catch (err) {
     console.error(`Error fetching profile with ID ${id}:`, err);
     throw err;
   }
+};
+
+const updateProfile = async (profileId, profileData) => {
+  const sql = `
+    UPDATE profile
+    SET first_name = ?, last_name = ?, aka = ?, bio = ?, 
+        location_city = ?, location_state = ?, location_country = ?, 
+        job_title = ?, company = ?, years_of_experience = ?, 
+        linkedin_url = ?, personal_website_url = ?, updated_at = NOW()
+    WHERE profile_id = ?
+  `;
+
+  const params = [
+    profileData.first_name,
+    profileData.last_name,
+    profileData.aka,
+    profileData.bio,
+    profileData.location_city,
+    profileData.location_state,
+    profileData.location_country,
+    profileData.job_title,
+    profileData.company,
+    profileData.years_of_experience,
+    profileData.linkedin_url,
+    profileData.personal_website_url,
+    profileId,
+  ];
+
+  await db.query(sql, params);
 };
 
 module.exports = {
@@ -115,5 +170,6 @@ module.exports = {
   getTitles,
   getProfiles,
   getProfileById,
-  deleteProfile
+  deleteProfile,
+  updateProfile,
 };

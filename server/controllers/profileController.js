@@ -1,4 +1,6 @@
+const db = require('../db');
 const profileManager = require('../managers/profile');
+const emailManager = require('../managers/email');
 
 // Function to add a new Andy profile
 const addProfile = async (req, res) => {
@@ -98,10 +100,39 @@ const getProfileById = async (req, res) => {
   }
 };
 
+
+
+const updateProfileAndEmail = async (req, res) => {
+  const connection = await db.getConnection(); // Get a transaction-safe connection
+  try {
+    await connection.beginTransaction();
+
+    const { profileId, email, ...profileData } = req.body;
+
+    // Update profile
+    await profileManager.updateProfile(profileId, profileData, connection);
+
+    // Update primary email if provided
+    if (email) {
+      await emailManager.updatePrimaryEmail(profileId, email, connection);
+    }
+
+    await connection.commit();
+    res.status(200).json({ message: 'Profile and email updated successfully' });
+  } catch (error) {
+    await connection.rollback();
+    console.error('Error updating profile or email:', error);
+    res.status(500).json({ message: 'Failed to update profile or email' });
+  } finally {
+    connection.release();
+  }
+};
+
 module.exports = {
   addProfile,
   getLocations,
   getTitles,
   getProfiles,
   getProfileById, // Add the new function to the exports
+  updateProfileAndEmail,
 };

@@ -86,6 +86,17 @@ const getEmails = async (profileId) => {
   return results;
 };
 
+const updatePrimaryEmail = async (profileId, email) => {
+  const sql = `
+    UPDATE emails
+    SET email_address = ?, is_primary = 1
+    WHERE profile_id = ?
+  `;
+
+  const params = [email, profileId];
+  await db.query(sql, params);
+};
+
 module.exports = {
   createEmailAlias,
   getPrimaryEmailByProfileId,
@@ -95,4 +106,5 @@ module.exports = {
   updateEmail,
   deleteEmail,
   getEmails,
+  updatePrimaryEmail,
 };

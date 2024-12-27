@@ -223,6 +223,26 @@ const AndyList = ({ user, setUser }) => {
 
   return (
     <div style={{ textAlign: "center", marginTop: "50px" }}>
+      {!user && (
+        <div
+          style={{
+            backgroundColor: '#f9f9f9',
+            border: '1px solid #ddd',
+            padding: '15px',
+            borderRadius: '5px',
+            marginBottom: '20px',
+            textAlign: 'center',
+            fontSize: '14px',
+            color: '#333',
+            width: '80%',
+            margin: '0 auto' // Center the div
+          }}
+        >
+          Anyone can sign up by clicking <strong>'Login'</strong> and then <strong>'Sign Up'</strong>. 
+          Once you claim a profile, your claim will remain in a pending state until an Admin verifies 
+          that you are Andy Dale and that the profile belongs to you.
+        </div>
+      )}
       <h2>List of Andy Profiles </h2>
 
       <input
@@ -235,6 +255,8 @@ const AndyList = ({ user, setUser }) => {
           fontSize: "16px",
           width: "80%",
           marginBottom: "20px",
+          margin: '0 auto', // Center the input
+          display: 'block' // Make it a block element
         }}
       />
 
@@ -286,9 +308,8 @@ const AndyList = ({ user, setUser }) => {
                     "Pending" // Show Pending if this is the user's row and it is not verified
                   ) : isCurrentUser ? (
                     <Link to="/profile">
-        <button>View My Profile</button>
-      </Link>
-                  
+                      <button>View My Profile</button>
+                    </Link>
                   ) : !userProfileId && !andy.hasAccount ? (
                     <ClaimButton
                       andy={andy}

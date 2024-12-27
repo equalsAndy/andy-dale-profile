@@ -5,15 +5,26 @@ const cors = require('cors');
 const cloneDeep = require('lodash/cloneDeep');
 const session = require('express-session');
 const passport = require('passport');
+
 const Auth0Strategy = require('passport-auth0');
 
 const db = require('./db');
+
+const {
+  addFunFact,
+  getFunFactsByProfileId,
+  getFunFacts,
+  updateFunFact,
+  deleteFunFact,
+} = require('./controllers/funFactController');
+
 const {
   addProfile,
   getLocations,
   getTitles,
   getProfiles,
   getProfileById,
+  updateProfileAndEmail,
 } = require('./controllers/profileController');
 const {
   addEmail,
@@ -23,6 +34,8 @@ const {
   sendAdminMessage,
   sendAndyToAndyMessage,
 } = require('./controllers/emailController');
+
+
 
 const { ensureAccountExists, claimProfile } = require('./controllers/userController');
 
@@ -73,6 +86,8 @@ app.use(
   })
 );
 
+
+
 // Passport setup
 app.use(passport.initialize());
 app.use(passport.session());
@@ -114,7 +129,7 @@ passport.deserializeUser(async (user, done) => {
 
     if (result) {
       const account = result; // Explicitly use the first result object
-      console.log("account: " + JSON.stringify(account));
+      //console.log("account: " + JSON.stringify(account));
 
       const deserializedUser = {
         displayName: user.displayName || user.name || user.nickname,
@@ -216,7 +231,7 @@ app.get('/api/user', (req, res) => {
       verified: req.user.verified || false, // Include verified status
     });
   } else {
-    console.error('No user found in request.');
+    //console.error('No user found in request.');
     res.status(401).json({ error: 'User not authenticated' });
   }
 });
@@ -238,8 +253,16 @@ app.post('/api/addEmail', addEmail);
 app.post('/api/update-email', updateEmail);
 app.post('/api/delete-email', deleteEmail);
 app.post('/api/get-profile', getProfileById);
+app.post('/api/update-profile', updateProfileAndEmail);
 app.post('/api/get-emails', getEmails);
 
+
+
+app.post('/api/add-funfact', addFunFact);
+app.get('/api/funfacts', getFunFacts);
+app.post('/api/update-funfact', updateFunFact);
+app.post('/api/delete-funfact', deleteFunFact);
+app.post('/api/getFunFactsByProfileId', getFunFactsByProfileId);
 
 
 
