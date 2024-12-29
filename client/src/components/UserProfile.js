@@ -14,7 +14,8 @@ const UserProfile = ({ user: initialUser }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [message, setMessage] = useState(null); // For success/error messages
+  const [message, setMessage] = useState(null);
+  const [errors, setErrors] = useState({}); // Validation errors
 
   const profile_id = user?.user?.profile_id;
   const apiUrl = process.env.REACT_APP_API_URL;
@@ -61,8 +62,60 @@ const UserProfile = ({ user: initialUser }) => {
     fetchProfile();
   }, [profile_id]);
 
+  // Validation logic
+  const validateField = (name, value) => {
+    let error = '';
+    switch (name) {
+      case 'first_name':
+      case 'last_name':
+        if (!value.trim()) {
+          error = 'This field is required.';
+        } else if (!/^[a-zA-Z\s]+$/.test(value)) {
+          error = 'Only alphabetic characters are allowed.';
+        }
+        break;
+      case 'years_of_experience':
+        if (value.trim() && (isNaN(value) || parseFloat(value) <= 0)) {
+          error = 'Must be a positive number.';
+        }
+        break;
+      case 'email_address':
+        if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+          error = 'Enter a valid email address.';
+        }
+        break;
+      case 'linkedin_url':
+      case 'personal_website_url':
+        if (value && !/^(https?:\/\/)?([\w\d-]+\.)+\w{2,}(\/.*)?$/.test(value)) {
+          error = 'Enter a valid URL.';
+        }
+        break;
+      default:
+        break;
+    }
+    return error;
+  };
+
+  // Validate all fields
+  const validateAllFields = () => {
+    const newErrors = {};
+    Object.keys(editableProfile).forEach((key) => {
+      const error = validateField(key, editableProfile[key]);
+      if (error) {
+        newErrors[key] = error;
+      }
+    });
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0; // Return true if no errors
+  };
+
   // Handle Save Profile
   const handleSaveProfile = async () => {
+    if (!validateAllFields()) {
+      setMessage({ text: 'Please fix the errors before saving.', type: 'error' });
+      return;
+    }
+
     try {
       const response = await fetch(`${apiUrl}/api/update-profile`, {
         method: 'POST',
@@ -75,6 +128,7 @@ const UserProfile = ({ user: initialUser }) => {
         setMessage({ text: data.message || 'Profile updated successfully!', type: 'success' });
         setProfile(editableProfile); // Sync the original profile with the updated one
         setIsEditing(false);
+        setErrors({}); // Clear errors after successful save
       } else {
         const errorData = await response.json();
         setMessage({ text: errorData.message || 'Failed to update profile.', type: 'error' });
@@ -84,14 +138,21 @@ const UserProfile = ({ user: initialUser }) => {
       setMessage({ text: 'An error occurred while saving the profile.', type: 'error' });
     }
 
-    // Clear the message after 3 seconds
     setTimeout(() => setMessage(null), 3000);
   };
 
-  // Handle Cancel Edit
   const handleCancelEdit = () => {
+    setErrors({}); // Clear errors on cancel
     setEditableProfile({ ...profile }); // Revert changes
     setIsEditing(false);
+  };
+
+  // Handle field change with inline validation
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setEditableProfile((prev) => ({ ...prev, [name]: value }));
+    const error = validateField(name, value);
+    setErrors((prev) => ({ ...prev, [name]: error }));
   };
 
   if (!user) {
@@ -104,7 +165,6 @@ const UserProfile = ({ user: initialUser }) => {
 
   return (
     <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
-      {/* "Return to Andy List" Button */}
       <button
         onClick={() => navigate('/andy-list')}
         style={{
@@ -122,7 +182,6 @@ const UserProfile = ({ user: initialUser }) => {
 
       <h2>User Profile</h2>
 
-      {/* Message Banner */}
       {message && (
         <div
           style={{
@@ -142,15 +201,10 @@ const UserProfile = ({ user: initialUser }) => {
         profile={profile}
         editableProfile={editableProfile}
         isEditing={isEditing}
-        handleInputChange={(e) =>
-          setEditableProfile((prev) => ({
-            ...prev,
-            [e.target.name]: e.target.value,
-          }))
-        }
+        handleInputChange={handleInputChange}
+        errors={errors}
       />
 
-      {/* Edit, Save, and Cancel Buttons */}
       <div style={{ textAlign: 'center', marginTop: '20px' }}>
         {isEditing ? (
           <>

@@ -107,10 +107,10 @@ const updateProfileAndEmail = async (req, res) => {
   try {
     await connection.beginTransaction();
 
-    const { profileId, email, ...profileData } = req.body;
+    const { profile_id, email, ...profileData } = req.body;
 
     // Update profile
-    await profileManager.updateProfile(profileId, profileData, connection);
+    await profileManager.updateProfile(profile_id, profileData, connection);
 
     // Update primary email if provided
     if (email) {
