@@ -19,6 +19,12 @@
     "auth0",
     "leaflet"
   ],
+  "jest": {
+  "testPathIgnorePatterns": [
+    "/node_modules/",
+    "/pr_tests/"
+  ]
+},
   "author": "Andy Dale",
   "license": "ISC",
   "resolutions": {
@@ -27,6 +33,7 @@
   },
   "dependencies": {
     "@auth0/auth0-react": "^2.2.4",
+    "@playwright/test": "^1.49.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
@@ -50,5 +57,8 @@
     "nodemon": "^3.1.7",
     "npm-force-resolutions": "^0.0.10",
     "supertest": "^7.0.0"
+  },
+  "directories": {
+    "test": "tests"
   }
 }

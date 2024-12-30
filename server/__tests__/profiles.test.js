@@ -84,7 +84,7 @@ describe('Profile Manager Tests', () => {
   });
 
   test('should return null for non-existent profile ID', async () => {
-    const profile = await getProfileById(999999); // Use an ID that doesn't exist
+    const profile = await getProfileById(9999999); // Use an ID that doesn't exist
     expect(profile).toBeUndefined();
   });
 });

@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from "react";
 import ClaimMyProfile from "./ClaimMyProfile";
-
-import { Link } from 'react-router-dom';
-
-
+import { Link } from "react-router-dom";
+import HelpModal from "./HelpModal";
 
 const apiUrl = process.env.REACT_APP_API_URL;
 
@@ -26,30 +24,38 @@ const MessageButton = ({ andy, onMessage }) => (
 );
 
 const AndyList = ({ user, setUser }) => {
-
-    //console.log("Andy List - Current user:", user);
-
   const userProfileId = user?.user?.profile_id;
   const userVerified = user?.user?.verified;
   const [andys, setAndys] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredAndys, setFilteredAndys] = useState([]);
   const [selectedAndy, setSelectedAndy] = useState(null);
-  const [dialogContent, setDialogContent] = useState(null); // State for dialog content
-  const [loading, setLoading] = useState(false); // Loading state for better feedback
-  const [refreshKey, setRefreshKey] = useState(0); // Key to force refresh
+  const [loading, setLoading] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [showHelpModal, setShowHelpModal] = useState(false);
+  
+  const helpTopics = [
+    {
+      id: "messageMe",
+      title: "Message Me Feature",
+      videoUrl: "https://share.synthesia.io/embeds/videos/020a9b1b-aa22-4d63-b7bf-b09c226311ff",
+    },
+    {
+      id: "claimProfile",
+      title: "Claiming Your Profile",
+      videoUrl: "https://share.synthesia.io/embeds/videos/12345678-claim-profile",
+    },
+  ];
+  const apiUrl = process.env.REACT_APP_API_URL;
 
+  // Fetch Andy profiles
   const fetchAndys = async () => {
-    console.log("in fetchAndys");
     try {
-      setLoading(true); // Start loading
+      setLoading(true);
       const response = await fetch(`${apiUrl}/api/profiles`);
       if (response.ok) {
         const data = await response.json();
-        console.log("in fetchAndys - new data fetched:", data);
-
-      setAndys(data);
-        setAndys([...data]);
+        setAndys(data);
         setFilteredAndys(data);
       } else {
         console.error("Failed to fetch Andy profiles:", response.statusText);
@@ -57,34 +63,15 @@ const AndyList = ({ user, setUser }) => {
     } catch (error) {
       console.error("Error fetching Andy profiles:", error);
     } finally {
-      setLoading(false); // Stop loading
-    }
-  };
-  const fetchCurrentUser = async () => {
-    try {
-      const response = await fetch(`${apiUrl}/api/user`, {
-        credentials: "include",
-      });
-      if (response.ok) {
-        const updatedUser = await response.json();
-        console.log("Updated current user:", updatedUser);
-        setUser(updatedUser); // Update the user state
-      } else {
-        const error = new Error(response.statusText);
-        console.error("Failed to fetch current user data:", error.message);
-      }
-    } catch (error) {
-      console.error("Error fetching current user data:", error);
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    console.log("useEffect[refreshKey] - Fetching Andy profiles");
     fetchAndys();
   }, [refreshKey]);
 
   useEffect(() => {
-    console.log("useEffect[andys, searchTerm] - Recalculating filteredAndys");
     const results = andys.filter(
       (andy) =>
         `${andy.first_name} ${andy.last_name}`
@@ -107,143 +94,120 @@ const AndyList = ({ user, setUser }) => {
     );
     setFilteredAndys(results);
   }, [searchTerm, andys]);
-  const handleThisIsMeClick = (andy) => {
-    if (!user) {
-      alert("You need to log in to claim a profile.");
-      return;
+
+  // Fetch updated user data
+  const refreshUser = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/api/user`, {
+        method: "GET",
+        credentials: "include", // Ensure cookies are sent
+      });
+      if (response.ok) {
+        const updatedUser = await response.json();
+        setUser(updatedUser); // Update the user state with the new data
+      } else {
+        console.error("Failed to refresh user:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error refreshing user:", error);
     }
-    setSelectedAndy(andy);
+  };
+
+  // Handle claiming a profile
+  const handleClaimSubmit = async (andy, email, allowAndyContact, allowPublicContact) => {
+    try {
+      const response = await fetch(`${apiUrl}/api/claimProfile`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          profileId: andy.profile_id,
+          email,
+          allowAndyContact,
+          allowPublicContact,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to claim profile.");
+      }
+
+      setSelectedAndy(null); // Close the modal
+      setRefreshKey((prev) => prev + 1); // Refresh the profile list
+      await refreshUser(); // Refresh the current user data
+    } catch (error) {
+      console.error(`Error claiming profile: ${error.message}`);
+    }
   };
 
   const handleMessageMeClick = async (andy) => {
-    console.log("handleMessageMeClick - user - ", user);
-  
-    // Determine sender name based on user status
-    let senderName = "Anonymous";
-    let senderAccountId = null;
-  
-    if (user?.user) {
-      senderAccountId = user.user.id; // Logged-in user's ID
-  
-      // If user is verified, set sender name to 'an Andy'
-      senderName = user.user.verified ? "an Andy" : "Anonymous";
-    }
-  
-    const subject = `Message from ${senderName} via AndyDale.me`;
     const message = prompt(`Enter your message for ${andy.first_name} ${andy.last_name}:`);
-  
     if (!message) {
       alert("Message cannot be empty.");
       return;
     }
-  
+
     try {
       const response = await fetch(`${apiUrl}/api/sendAndyToAndyMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          senderAccountId, // Logged-in user's account_id or null for guests
-          recipientProfileId: andy.profile_id, // Recipient's profile_id
-          subject,
+          recipientProfileId: andy.profile_id,
+          subject: `Message from a user via AndyDale.me`,
           message,
         }),
       });
-  
+
       if (response.ok) {
         const result = await response.json();
         alert(`Message sent successfully! Alias: ${result.alias}`);
       } else {
         const error = await response.json();
-        console.error("Failed to send message:", error);
         alert(`Failed to send message: ${error.message || "Unknown error"}`);
       }
     } catch (error) {
-      console.error("Error sending message:", error);
       alert("Error sending message. Please try again.");
     }
   };
 
- 
-  const handleClaimProfile = async (
-    andy,
-    email,
-    allowAndyContact,
-    allowPublicContact
-  ) => {
-    if (!andy) {
-      console.error("Missing required arguments for handleClaimProfile");
-      return;
-    }
-  
-    try {
-      setLoading(true); // Start loading
-      const response = await fetch(`${apiUrl}/api/claimProfile`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include", // Include cookies for authentication
-        body: JSON.stringify({
-          profileId: andy.profile_id,
-          email,
-          allowAdminContact: true, // Admin contact is always true
-          allowAndyContact, // User-defined preference
-          allowPublicContact, // User-defined preference
-        }),
-      });
-  
-      if (response.ok) {
-        console.log("handleClaimProfile - successfully claimed profile");
-        setTimeout(() => {
-          fetchAndys(); // Refresh the profiles list
-          fetchCurrentUser(); // Refresh the current user's info
-        }, 100); // Allow slight delay for the server to process changes
-        setSelectedAndy(null); // Close the modal after successful update
-      } else if (response.status === 409) {
-        setSelectedAndy(null); // Close the claim modal
-        setDialogContent(
-          "It appears that you have already claimed a profile. If you think this is an error, please message the admin using the button above."
-        ); // Set the dialog content
-      } else {
-        console.error("Failed to claim profile. Please try again.");
-      }
-    } catch (error) {
-      console.error("Error claiming profile:", error);
-    } finally {
-      setLoading(false); // Stop loading
-    }
-  };
-
-  const closeModal = () => {
-    setSelectedAndy(null);
-  };
-
-  const closeDialog = () => {
-    setDialogContent(null); // Close the dialog by clearing its content
-  };
-
   return (
-    <div style={{ textAlign: "center", marginTop: "50px" }}>
+    <div style={{ textAlign: "center", marginTop: "10px" }}>
       {!user && (
         <div
           style={{
-            backgroundColor: '#f9f9f9',
-            border: '1px solid #ddd',
-            padding: '15px',
-            borderRadius: '5px',
-            marginBottom: '20px',
-            textAlign: 'center',
-            fontSize: '14px',
-            color: '#333',
-            width: '80%',
-            margin: '0 auto' // Center the div
+            backgroundColor: "#f9f9f9",
+            border: "1px solid #ddd",
+            padding: "15px",
+            borderRadius: "5px",
+            marginBottom: "20px",
+            textAlign: "center",
+            fontSize: "14px",
+            color: "#333",
+            width: "80%",
+            margin: "0 auto",
           }}
         >
-          Anyone can sign up by clicking <strong>'Login'</strong> and then <strong>'Sign Up'</strong>. 
-          Once you claim a profile, your claim will remain in a pending state until an Admin verifies 
-          that you are Andy Dale and that the profile belongs to you.
+          Anyone can sign up by clicking <strong>'Login'</strong> and then{" "}
+          <strong>'Sign Up'</strong>. Once you claim a profile, your claim will
+          remain in a pending state until an Admin verifies that you are Andy
+          Dale and that the profile belongs to you.
         </div>
       )}
-      <h2>List of Andy Profiles </h2>
+      <h2>
+        List of Andy Profiles
+        <button
+          onClick={() => setShowHelpModal(true)}
+          style={{
+            marginLeft: "10px",
+            cursor: "pointer",
+          }}
+          title="Learn about the features"
+        >
+          <span style={{ fontSize: "20px", fontWeight: "bold" }}>Help Me</span>
+        </button>
+      </h2>
 
       <input
         type="text"
@@ -255,12 +219,12 @@ const AndyList = ({ user, setUser }) => {
           fontSize: "16px",
           width: "80%",
           marginBottom: "20px",
-          margin: '0 auto', // Center the input
-          display: 'block' // Make it a block element
+          margin: "0 auto",
+          display: "block",
         }}
       />
 
-      {loading && <p>Loading...</p>} {/* Display loading indicator */}
+      {loading && <p>Loading...</p>}
 
       <table
         style={{
@@ -279,11 +243,10 @@ const AndyList = ({ user, setUser }) => {
             <th>Action</th>
           </tr>
         </thead>
-
         <tbody>
           {filteredAndys.map((andy) => {
             const isCurrentUser = userProfileId === andy.profile_id;
-            const isPending = isCurrentUser && andy.isVerified === 0; // Check if the current user's profile is not verified
+            const isPending = isCurrentUser && andy.isVerified === 0;
             const canMessage =
               andy.allow_public_contact ||
               (andy.allow_andy_contact && userVerified);
@@ -292,10 +255,12 @@ const AndyList = ({ user, setUser }) => {
               <tr
                 key={andy.profile_id}
                 style={{
-                  backgroundColor: isCurrentUser ? "#ffebcd" : "transparent", // Highlight "This is you" row
+                  backgroundColor: isCurrentUser ? "#ffebcd" : "transparent",
                 }}
               >
-                <td>{andy.first_name} {andy.last_name}</td>
+                <td>
+                  {andy.first_name} {andy.last_name}
+                </td>
                 <td>{andy.job_title || "Not specified"}</td>
                 <td>{andy.company || "Not specified"}</td>
                 <td>
@@ -305,7 +270,7 @@ const AndyList = ({ user, setUser }) => {
                 </td>
                 <td style={{ textAlign: "center" }}>
                   {isPending ? (
-                    "Pending" // Show Pending if this is the user's row and it is not verified
+                    "Pending"
                   ) : isCurrentUser ? (
                     <Link to="/profile">
                       <button>View My Profile</button>
@@ -314,13 +279,10 @@ const AndyList = ({ user, setUser }) => {
                     <ClaimButton
                       andy={andy}
                       user={user}
-                      onClaim={handleThisIsMeClick}
+                      onClaim={() => setSelectedAndy(andy)}
                     />
                   ) : canMessage ? (
-                    <MessageButton
-                      andy={andy}
-                      onMessage={handleMessageMeClick}
-                    />
+                    <MessageButton andy={andy} onMessage={handleMessageMeClick} />
                   ) : null}
                 </td>
               </tr>
@@ -329,49 +291,22 @@ const AndyList = ({ user, setUser }) => {
         </tbody>
       </table>
 
-      {/* Modal for Email Form */}
       {selectedAndy && (
         <ClaimMyProfile
           key={selectedAndy.profile_id}
           andy={selectedAndy}
           user={user}
-          onClose={closeModal}
-          onSubmit={handleClaimProfile}
+          onClose={() => setSelectedAndy(null)}
+          onSubmit={handleClaimSubmit}
         />
       )}
 
-      {/* Dialog Box */}
-      {dialogContent && (
-        <div
-          style={{
-            position: "fixed",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            background: "#eee",
-            padding: "20px",
-            borderRadius: "8px",
-            boxShadow: "0 4px 8px rgba(0,0,0,0.2)",
-            zIndex: 1000,
-            textAlign: "center",
-          }}
-        >
-          <p>{dialogContent}</p>
-          <button
-            onClick={closeDialog}
-            style={{
-              padding: "10px 20px",
-              fontSize: "16px",
-              backgroundColor: "#4CAF50",
-              color: "white",
-              border: "none",
-              borderRadius: "5px",
-              cursor: "pointer",
-            }}
-          >
-            OK
-          </button>
-        </div>
+      {/* Help Modal */}
+      {showHelpModal && (
+        <HelpModal
+          topics={helpTopics}
+          onClose={() => setShowHelpModal(false)}
+        />
       )}
     </div>
   );

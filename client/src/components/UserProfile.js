@@ -3,32 +3,54 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import ProfileFields from './ProfileFields';
 import FunFacts from './FunFacts';
 
-const UserProfile = ({ user: initialUser }) => {
-  const [user, setUser] = useState(() => {
-    const storedUser = localStorage.getItem('user');
-    return storedUser ? JSON.parse(storedUser) : initialUser;
-  });
-
+const UserProfile = ({ user: initialUser, setUser }) => {
+  const [user, setUserState] = useState(initialUser);
   const [profile, setProfile] = useState(null);
   const [editableProfile, setEditableProfile] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [message, setMessage] = useState(null);
-  const [errors, setErrors] = useState({}); // Validation errors
+  const [errors, setErrors] = useState({});
+  const navigate = useNavigate();
 
   const profile_id = user?.user?.profile_id;
   const apiUrl = process.env.REACT_APP_API_URL;
-  const navigate = useNavigate();
 
-  // Persist user in localStorage
+  // Fetch and synchronize the latest user data
+  const refreshUser = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/api/user`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const updatedUser = await response.json();
+        setUser(updatedUser); // Update the global user state
+        setUserState(updatedUser); // Update the local user state
+        localStorage.setItem('user', JSON.stringify(updatedUser)); // Sync localStorage
+      } else {
+        console.error('Failed to fetch updated user data');
+      }
+    } catch (err) {
+      console.error('Error refreshing user:', err);
+    }
+  };
+
+  // Initialize and fetch user on mount
+  useEffect(() => {
+    refreshUser();
+  }, []);
+
+  // Persist user in localStorage whenever it changes
   useEffect(() => {
     if (user) {
       localStorage.setItem('user', JSON.stringify(user));
     }
   }, [user]);
 
-  // Fetch profile data
+  // Fetch the profile data
   useEffect(() => {
     if (!profile_id) {
       setLoading(false);
@@ -126,9 +148,10 @@ const UserProfile = ({ user: initialUser }) => {
       if (response.ok) {
         const data = await response.json();
         setMessage({ text: data.message || 'Profile updated successfully!', type: 'success' });
-        setProfile(editableProfile); // Sync the original profile with the updated one
+        setProfile(editableProfile);
         setIsEditing(false);
-        setErrors({}); // Clear errors after successful save
+        setErrors({});
+        await refreshUser(); // Refresh the user state after update
       } else {
         const errorData = await response.json();
         setMessage({ text: errorData.message || 'Failed to update profile.', type: 'error' });
@@ -142,12 +165,11 @@ const UserProfile = ({ user: initialUser }) => {
   };
 
   const handleCancelEdit = () => {
-    setErrors({}); // Clear errors on cancel
-    setEditableProfile({ ...profile }); // Revert changes
+    setErrors({});
+    setEditableProfile({ ...profile });
     setIsEditing(false);
   };
 
-  // Handle field change with inline validation
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setEditableProfile((prev) => ({ ...prev, [name]: value }));
