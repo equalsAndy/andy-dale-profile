@@ -1,3 +1,5 @@
+/* eslint-disable jest/no-export */
+
 const { test, expect } = require('@playwright/test');
 
 test('has title', async ({ page }) => {

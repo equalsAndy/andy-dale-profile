@@ -19,7 +19,7 @@
     "auth0",
     "leaflet"
   ],
-  "jest": {
+"jest": {
   "testPathIgnorePatterns": [
     "/node_modules/",
     "/pr_tests/"
