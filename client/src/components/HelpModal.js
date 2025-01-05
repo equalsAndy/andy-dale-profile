@@ -16,9 +16,11 @@ const HelpModal = ({ onClose }) => {
     {
       id: "claimProfile",
       title: "Claiming Your Profile",
-      videoUrl: "https://share.synthesia.io/embeds/videos/12345678-claim-profile",
+      videoUrl: "https://share.synthesia.io/embeds/videos/5315f0d2-5856-43b7-9011-d2ec736cc3f2",
+    
     },
   ];
+
 
   const [selectedTopic, setSelectedTopic] = useState(topics[0]); // Default to the first topic
 

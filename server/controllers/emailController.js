@@ -67,6 +67,7 @@ const sendAndyToAndyMessage = async (req, res) => {
         emailMessageId: emailResponse.messageId,
         alias: anonymizedEmail,
         message: 'Email sent and saved successfully',
+
       });
     } else {
       res.status(500).json({
@@ -225,7 +226,7 @@ const getEmails = async (req, res) => {
   const { profileId } = req.body;
 
   if (!profileId) {
-    return res.status(400).send('profileId is required');
+    return res.status(400).send('profile Id is required');
   }
 
   try {
