@@ -1,67 +1,60 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, forwardRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import '../styles/Header.css'; // Import the CSS file
 
-const Header = () => {
+const Header = forwardRef((props, ref) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [user, setUser] = useState(null);
 
-  // Base API URL from environment variables
   const apiUrl = process.env.REACT_APP_API_URL;
   const auth0Domain = process.env.REACT_APP_AUTH0_DOMAIN;
   const auth0ClientId = process.env.REACT_APP_AUTH0_CLIENT_ID;
 
-  // Fetch the logged-in user's data and ensure their account exists
   useEffect(() => {
     const fetchAndEnsureAccount = async () => {
       try {
         const response = await fetch(`${apiUrl}/api/user`, {
-          credentials: 'include', // Include cookies for session
+          credentials: 'include',
         });
         if (response.ok) {
           const userData = await response.json();
-          console.log("userData = "+JSON.stringify(userData));
           setUser(userData.user);
-  
-          // Ensure account exists for the logged-in user
-      
+
           if (userData.user) {
             const ensureAccountResponse = await fetch(`${apiUrl}/api/ensure-account`, {
               method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
+              headers: { 'Content-Type': 'application/json' },
               credentials: 'include',
-              body: JSON.stringify( userData.user ),
+              body: JSON.stringify(userData.user),
             });
-  
+
             if (!ensureAccountResponse.ok) {
               console.error('Failed to ensure account exists:', await ensureAccountResponse.text());
             }
           }
         } else {
-          setUser(null); // Clear user state if not authenticated
+          setUser(null);
         }
       } catch (error) {
-        setUser(null); // Clear user state on error
+        setUser(null);
         console.error('Error fetching user or ensuring account:', error);
       }
     };
-  
+
     fetchAndEnsureAccount();
   }, [apiUrl]);
 
   const handleLogin = () => {
-    const currentPath = window.location.pathname; // Get the current page path
+    const currentPath = window.location.pathname;
     const loginUrl = `${apiUrl}/auth/login?returnTo=${encodeURIComponent(currentPath)}`;
-    window.location.href = loginUrl; // Redirect to login with returnTo query parameter
+    window.location.href = loginUrl;
   };
 
   const handleLogout = async () => {
     const logoutUrl = `https://${auth0Domain}/v2/logout?client_id=${auth0ClientId}&returnTo=${encodeURIComponent(window.location.origin)}&federated`;
 
     try {
-      // Attempt to clear the session on the server
       await fetch(`${apiUrl}/auth/logout`, {
         credentials: 'include',
         method: 'POST',
@@ -69,8 +62,7 @@ const Header = () => {
     } catch (error) {
       console.error('Error during server logout:', error);
     } finally {
-      // Always redirect to Auth0 logout, regardless of server logout result
-      setUser(null); // Clear user state immediately
+      setUser(null);
       window.location.href = logoutUrl;
     }
   };
@@ -80,100 +72,45 @@ const Header = () => {
   };
 
   return (
-    <header
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100%',
-        backgroundColor: '#f8f9fa',
-        borderBottom: '1px solid #ddd',
-        zIndex: 1000,
-      }}
-    >
-      <div
-        style={{
-          maxWidth: '800px',
-          width: '100%',
-          margin: '0 auto',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '10px 20px',
-          paddingLeft: '40px',
-          paddingRight: '40px',
-        }}
-      >
-        <h1 style={{ margin: 0, fontSize: '24px' }}>
-          <Link to="/" style={{ textDecoration: 'none', color: '#333' }}>
+    <header className="header" ref={ref}>
+      <div className="header-container">
+        <h1 className="header-title">
+          <Link to="/" className="header-link">
             Andy Dale Project
           </Link>
         </h1>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {/* If user is authenticated, show their name and a Logout button */}
+        <div className="header-actions">
           {user ? (
             <>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div className="header-user-info" style={{ display: 'flex', alignItems: 'center' }}>
                 <img
                   src={user.picture || '/default-avatar.png'}
                   alt={user.displayName || user.nickname || 'User'}
-                  style={{ height: '30px', width: '30px', borderRadius: '50%' }}
+                  className="header-avatar"
+                  style={{ width: '24px', height: '24px', marginRight: '8px' }}
                 />
-      
-                <span>{user.displayName || user.nickname || user._json?.email || 'User'}</span>
+                <span className="header-username">
+                  {user.displayName || user.nickname || user._json?.email || 'User'}
+                </span>
               </div>
-              <button
-                onClick={handleLogout}
-                style={{
-                  padding: '10px 20px',
-                  fontSize: '16px',
-                  backgroundColor: '#dc3545',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '5px',
-                  cursor: 'pointer',
-                }}
-              >
+              <button className="header-button logout-button" onClick={handleLogout}>
                 Logout
               </button>
             </>
           ) : (
-            <button
-              onClick={handleLogin}
-              style={{
-                padding: '10px 20px',
-                fontSize: '16px',
-                backgroundColor: '#007bff',
-                color: 'white',
-                border: 'none',
-                borderRadius: '5px',
-                cursor: 'pointer',
-              }}
-            >
+            <button className="header-button login-button" onClick={handleLogin}>
               Login
             </button>
           )}
           {location.pathname !== '/contact-admin' && (
-            <button
-              onClick={handleMessageAdminClick}
-              style={{
-                padding: '10px 20px',
-                fontSize: '16px',
-                backgroundColor: '#007bff',
-                color: 'white',
-                border: 'none',
-                borderRadius: '5px',
-                cursor: 'pointer',
-              }}
-            >
+            <button className="header-button admin-button" onClick={handleMessageAdminClick}>
               Message Admin
             </button>
           )}
-         
         </div>
       </div>
     </header>
   );
-};
+});
 
 export default Header;

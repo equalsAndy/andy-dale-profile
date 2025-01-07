@@ -40,10 +40,11 @@ const AndyLocations = () => {
       style={{
         position: 'relative',
         textAlign: 'left',
-        marginTop: '20px',
-        padding: '40px',
+        marginTop: '2px',
+        padding: '4px',
         color: 'black',
         fontSize: '24px',
+        width: '70%'
       }}
     >
       <div

@@ -17,7 +17,7 @@ const AndyTitles = () => {
     };
 
     fetchTitles();
-  }, [apiUrl]); // Include apiUrl in the dependency array
+  }, [apiUrl]);
 
   useEffect(() => {
     if (titles.length > 0) {
@@ -36,7 +36,14 @@ const AndyTitles = () => {
   const { job_title } = titles[currentIndex];
 
   return (
-    <div style={{ position: 'relative', textAlign: 'right', marginTop: '20px', padding: '40px', color: 'black', fontSize: '24px' }}>
+    <div style={{
+      position: 'relative',
+      textAlign: 'right',
+      marginTop: '2px',
+      padding: '4px',
+      color: 'black',
+      fontSize: '24px'
+    }}>
       <div
         style={{
           position: 'absolute',
@@ -44,7 +51,7 @@ const AndyTitles = () => {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundImage: 'url("/good_job.png")', // Optional background
+          backgroundImage: 'url("/good_job.png")',
           backgroundSize: '40%',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',

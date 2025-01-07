@@ -1,0 +1,101 @@
+/* General header styles */
+.header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #ddd;
+    z-index: 1000;
+  }
+  
+  .header-container {
+    max-width: 800px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 40px; /* Increased padding for better spacing */
+  }
+  
+  .header-title {
+    margin: 0;
+    font-size: 24px;
+    flex-shrink: 0; /* Prevent shrinking */
+  }
+  
+  .header-link {
+    text-decoration: none;
+    color: #333;
+  }
+  
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Add extra gap between user info and buttons */
+    margin-left: 20px; /* Push actions to the right */
+  }
+  
+  .header-user-info {
+    display: flex;
+    align-items: center;
+    gap: 1px;
+    padding-left: 20px;
+  }
+  
+  .header-avatar {
+    height: 30px;
+    width: 30px;
+    border-radius: 50%;
+  }
+  
+  .header-username {
+    font-size: 16px;
+  }
+  
+  /* Button styles */
+  .header-button {
+    padding: 10px 20px;
+    font-size: 16px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  .login-button {
+    background-color: #007bff;
+    color: white;
+  }
+  
+  .logout-button {
+    background-color: #dc3545;
+    color: white;
+  }
+  
+  .admin-button {
+    background-color: #007bff;
+    color: white;
+  }
+  
+  /* Mobile-friendly adjustments */
+  @media (max-width: 768px) {
+    .header-container {
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+  
+    .header-title {
+      font-size: 20px;
+    }
+  
+    .header-actions {
+      flex-direction: column;
+      gap: 5px;
+    }
+  
+    .header-button {
+      font-size: 14px;
+      padding: 8px 16px;
+    }
+  }

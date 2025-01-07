@@ -1,0 +1,60 @@
+/* General styles */
+.container {
+    text-align: center;
+    margin-top: 20px;
+  }
+  
+  /* Logo and Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px; /* Adds spacing between logo and text */
+    flex-wrap: wrap; /* Allow wrapping for smaller screens */
+  }
+  
+  /* Blocks */
+  .block {
+    width: 100%;
+    margin: 20px 0;
+  }
+  
+  .block-left {
+    text-align: left;
+    flex-grow: 0; /* Prevent block from stretching */
+    margin-right: auto; /* Keep it aligned left */
+    margin-left: 5%; /* Pull in from the left */
+  }
+  
+  .block-center {
+    text-align: center;
+    margin: 0 auto; /* Center block */
+  }
+  
+  .block-right {
+    margin-left: auto;
+    text-align: right;
+    flex-grow: 0; /* Prevent block from stretching */
+    flex-basis: 70%; /* Takes one-third of the container width */
+  }
+  
+  /* Flex container for locations and titles */
+  .flex-container {
+    display: flex;
+    justify-content: space-between; /* Distribute blocks evenly */
+    flex-wrap: wrap;
+  }
+  
+  /* Media Queries for Mobile */
+  @media (max-width: 768px) {
+    .block {
+      text-align: center; /* Center text on smaller screens */
+    }
+    .flex-container {
+      flex-direction: column;
+      align-items: center;
+    }
+    .block-right {
+      align-self: flex-end; /* Maintain right alignment */
+    }
+  }

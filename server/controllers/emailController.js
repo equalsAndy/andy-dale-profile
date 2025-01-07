@@ -88,7 +88,7 @@ const sendAdminMessage = async (req, res) => {
   const { subject, message, email } = req.body;
 
   const profileId = 2; // Default profile_id
-  const to = 'equalsandy@gmail.com'; // Default recipient_email
+  const to = 'adminAndy@andydale.me'; // Default recipient_email
 
   if (!subject || !message) {
     return res.status(400).send('Subject and message are required');
