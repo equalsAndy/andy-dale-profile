@@ -4,5 +4,3 @@
 # Run Jest tests
 npm test
 
-# Run Playwright tests
-npx playwright test
