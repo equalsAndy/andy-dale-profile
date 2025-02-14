@@ -14,7 +14,7 @@ const {
   const deviceIds = [CONTACT_ID];
   
   // Toggle state
-  let ledState = false;
+  let LivingroomLight = false;
   
   // Define callback functions
   const setPowerState = async (deviceid, data) => {
@@ -40,15 +40,15 @@ const {
   // API Function to toggle the light
   const toggleLight = async (req, res) => {
     try {
-      ledState = !ledState;
-      console.log(`Toggling light: ${ledState ? "ON" : "OFF"}`);
+      LivingroomLight = !LivingroomLight;
+      console.log(`Toggling light: ${LivingroomLight ? "ON" : "OFF"}`);
   
       // Send the event to Sinric Pro
       await raiseEvent(sinricpro, eventNames.contact, CONTACT_ID, {
-        state: ledState ? "open" : "closed",
+        state: LivingroomLight ? "open" : "closed",
       });
   
-      res.json({ success: true, ledState, message: "Event sent to Sinric Pro" });
+      res.json({ success: true, LivingroomLight, message: "Event sent to Sinric Pro" });
     } catch (error) {
       console.error("❌ Error sending event to Sinric Pro:", error);
       res.status(500).json({ success: false, error: error.message });
