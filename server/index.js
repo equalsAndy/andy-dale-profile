@@ -35,6 +35,8 @@ const {
   sendAndyToAndyMessage,
 } = require('./controllers/emailController');
 
+const { toggleLight } = require('./controllers/SmarthomeController');
+
 
 
 const { ensureAccountExists, claimProfile } = require('./controllers/userController');
@@ -263,9 +265,10 @@ app.get('/api/funfacts', getFunFacts);
 app.post('/api/update-funfact', updateFunFact);
 app.post('/api/delete-funfact', deleteFunFact);
 app.post('/api/getFunFactsByProfileId', getFunFactsByProfileId);
+app.post('/api/delete-funfact', deleteFunFact);
 
 
-
+app.post('/api/toggleLight', toggleLight);
 
 
 // Test database route
