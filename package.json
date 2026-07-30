@@ -2,12 +2,22 @@
   "name": "andy-dale-profile",
   "version": "0.0.0",
   "private": true,
-  "description": "Andy Dale profile app",
+  "description": "Andy Dale profile app - server",
+  "main": "server/index.js",
   "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
     "test:postmark": "node scripts/test-postmark.js"
   },
   "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
     "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-mysql-session": "^3.0.3",
+    "express-rate-limit": "^7.4.0",
+    "express-session": "^1.18.0",
+    "mysql2": "^3.11.0",
     "postmark": "^4.0.5"
   }
 }
