@@ -48,7 +48,7 @@ CREATE TABLE join_requests (
 
 CREATE TABLE profile (
   profile_id             INT AUTO_INCREMENT PRIMARY KEY,
-  account_id             INT NULL UNIQUE,   -- NULL = unclaimed lead profile (e.g. sourced, not yet invited/claimed)
+  account_id             INT NOT NULL UNIQUE, -- every profile belongs to a real account; no signup, no profile
   first_name             VARCHAR(50) NOT NULL DEFAULT 'Andy',
   last_name              VARCHAR(50) NOT NULL DEFAULT 'Dale',
   preferred_name         VARCHAR(50) NULL,  -- "aka"
@@ -60,7 +60,7 @@ CREATE TABLE profile (
   claims_to_fame         TEXT NULL,         -- basic, public
   created_at             TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at             TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (account_id) REFERENCES accounts(account_id) ON DELETE SET NULL
+  FOREIGN KEY (account_id) REFERENCES accounts(account_id) ON DELETE CASCADE
 );
 
 -- Detailed / disambiguation fields: verified-only visibility as a group default
@@ -199,6 +199,30 @@ CREATE TABLE search_match_notifications (
   created_at            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (matched_account_id) REFERENCES accounts(account_id) ON DELETE CASCADE,
   FOREIGN KEY (searcher_account_id) REFERENCES accounts(account_id) ON DELETE CASCADE
+);
+
+-- ============================================================
+-- Leads (admin-only, not part of the public product surface)
+-- ============================================================
+-- Sourced candidates (e.g. found on LinkedIn) who haven't joined yet.
+-- Deliberately separate from `profile`: nothing here is ever shown to other
+-- users or exposed publicly. It exists purely so an admin can send a one-time
+-- invite. Once someone actually joins, they get a normal profile like anyone
+-- else -- there is no "claim" flow linking a signup back to a lead row.
+
+CREATE TABLE leads (
+  lead_id           INT AUTO_INCREMENT PRIMARY KEY,
+  first_name        VARCHAR(50) NOT NULL DEFAULT 'Andy',
+  last_name         VARCHAR(50) NOT NULL DEFAULT 'Dale',
+  city              VARCHAR(100) NULL,
+  country           VARCHAR(100) NULL,
+  source            VARCHAR(50) NOT NULL DEFAULT 'linkedin',
+  highlights        TEXT NULL,  -- notable facts found during research, to personalize the invite
+  status            ENUM('not_invited','invited','joined') NOT NULL DEFAULT 'not_invited',
+  invited_at        TIMESTAMP NULL,
+  joined_account_id INT NULL,  -- set by admin if/when this lead is recognized to have joined; tracking only
+  created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (joined_account_id) REFERENCES accounts(account_id) ON DELETE SET NULL
 );
 
 -- ============================================================
