@@ -5,6 +5,15 @@ const { hashPassword, verifyPassword } = require('../utils/password');
 
 const router = express.Router();
 
+// Emails in this list always land as verified admins on signup, no queue
+// review needed -- keeps this durable across fresh deploys/DB resets rather
+// than relying on a one-off manual DB edit.
+const superAdminEmails = (process.env.SUPER_ADMIN_EMAILS || '')
+  .split(',')
+  .map((e) => e.trim().toLowerCase())
+  .filter(Boolean);
+const isSuperAdminEmail = (email) => superAdminEmails.includes(email.trim().toLowerCase());
+
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 10,
@@ -46,14 +55,28 @@ router.post('/signup', loginLimiter, async (req, res, next) => {
       [accountId, firstName || 'Andy', lastName || 'Dale']
     );
 
-    await conn.query('INSERT INTO join_requests (account_id, notes) VALUES (?, ?)', [
-      accountId,
-      note || null,
-    ]);
+    let membershipStatus = 'pending';
+    if (isSuperAdminEmail(loginEmail)) {
+      membershipStatus = 'verified';
+      await conn.query('UPDATE accounts SET membership_status = ?, is_admin = 1 WHERE account_id = ?', [
+        membershipStatus,
+        accountId,
+      ]);
+      await conn.query(
+        `INSERT INTO join_requests (account_id, status, notes, reviewed_by, reviewed_at)
+         VALUES (?, 'approved', 'Auto-approved: designated super admin', ?, NOW())`,
+        [accountId, accountId]
+      );
+    } else {
+      await conn.query('INSERT INTO join_requests (account_id, notes) VALUES (?, ?)', [
+        accountId,
+        note || null,
+      ]);
+    }
 
     await conn.commit();
     req.session.accountId = accountId;
-    res.status(201).json({ accountId, membershipStatus: 'pending' });
+    res.status(201).json({ accountId, membershipStatus });
   } catch (err) {
     await conn.rollback();
     next(err);
