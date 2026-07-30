@@ -195,6 +195,7 @@ CREATE TABLE search_match_notifications (
   matched_account_id    INT NOT NULL,
   searcher_account_id   INT NOT NULL,
   search_criteria       JSON NOT NULL,
+  message               TEXT NULL, -- what the searcher would say, shown to the matched account if they choose to look
   status                ENUM('pending','responded','ignored') NOT NULL DEFAULT 'pending',
   created_at            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (matched_account_id) REFERENCES accounts(account_id) ON DELETE CASCADE,
