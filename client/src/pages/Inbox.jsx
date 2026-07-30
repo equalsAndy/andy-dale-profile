@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api';
 
@@ -13,7 +14,7 @@ export default function Inbox() {
     api.get('/connection-requests').then(setRequests).catch(() => {});
   }, [account]);
 
-  if (!account) return <p className="muted">Log in to see your inbox.</p>;
+  if (!account) return <p className="muted"><Link to="/login">Log in</Link> to see your inbox.</p>;
 
   return (
     <div>

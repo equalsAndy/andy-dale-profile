@@ -4,7 +4,7 @@ const prefersReducedMotion = () =>
   typeof window !== 'undefined' &&
   window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
-export default function Ticker({ label, items }) {
+export default function Ticker({ label, items, tilt = '' }) {
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
@@ -14,7 +14,7 @@ export default function Ticker({ label, items }) {
   }, [items.length]);
 
   return (
-    <div className="name-badge">
+    <div className={`name-badge ${tilt}`}>
       <div className="badge-eyelet" />
       <div className="badge-label label">{label}</div>
       {items.length === 0 ? (

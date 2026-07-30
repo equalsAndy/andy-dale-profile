@@ -46,7 +46,7 @@ export default function Home() {
       )}
 
       <div className="board">
-        <div className="name-badge hero-badge">
+        <div className="name-badge hero-badge t1">
           <div className="badge-eyelet" />
           <div className="badge-hello">Hello, my name is</div>
           <div className="badge-name fun">Andy Dale</div>
@@ -55,9 +55,9 @@ export default function Home() {
 
         {directory && (
           <>
-            <Ticker label="Andy Dale lives in:" items={directory.cities} />
-            <Ticker label="Andy Dale can:" items={directory.skills} />
-            <Ticker label="Andy Dale's hobbies:" items={directory.hobbies} />
+            <Ticker label="Andy Dale lives in:" items={directory.cities} tilt="t2" />
+            <Ticker label="Andy Dale can:" items={directory.skills} tilt="t3" />
+            <Ticker label="Andy Dale's hobbies:" items={directory.hobbies} tilt="t1" />
           </>
         )}
       </div>

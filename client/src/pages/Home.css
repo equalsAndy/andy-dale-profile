@@ -55,6 +55,23 @@
   width: 290px;
 }
 
+.name-badge.t1 {
+  transform: rotate(1.5deg);
+}
+
+.name-badge.t2 {
+  transform: rotate(-1.5deg);
+}
+
+.name-badge.t3 {
+  transform: rotate(2deg);
+}
+
+.name-badge:hover {
+  transform: rotate(0deg);
+  transition: transform 0.25s ease;
+}
+
 .badge-eyelet {
   width: 12px;
   height: 12px;

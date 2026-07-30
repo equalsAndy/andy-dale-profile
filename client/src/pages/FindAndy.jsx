@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api';
 
@@ -9,7 +10,7 @@ export default function FindAndy() {
   const [results, setResults] = useState(null);
   const [error, setError] = useState(null);
 
-  if (!account) return <p className="muted">Log in to search.</p>;
+  if (!account) return <p className="muted"><Link to="/login">Log in</Link> to search.</p>;
   if (account.membership_status !== 'verified') {
     return <p className="muted">Find an Andy is available to verified accounts.</p>;
   }

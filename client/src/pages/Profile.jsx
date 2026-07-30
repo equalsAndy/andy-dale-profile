@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api';
 
@@ -11,7 +12,7 @@ export default function Profile() {
   }, [account]);
 
   if (!account) {
-    return <p className="muted">Log in to see your profile.</p>;
+    return <p className="muted"><Link to="/login">Log in</Link> to see your profile.</p>;
   }
 
   return (
