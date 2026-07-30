@@ -28,8 +28,8 @@ export default function Home() {
           <Link className="btn btn-primary" to="/join">
             Request to join
           </Link>
-          <Link className="btn btn-ghost" to="/login">
-            Log in
+          <Link className="btn btn-ghost" to="/roster">
+            See who's already here
           </Link>
         </div>
       )}

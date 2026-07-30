@@ -10,9 +10,13 @@ export default function FindAndy() {
   const [results, setResults] = useState(null);
   const [error, setError] = useState(null);
 
-  if (!account) return <p className="muted"><Link to="/login">Log in</Link> to search.</p>;
-  if (account.membership_status !== 'verified') {
-    return <p className="muted">Find an Andy is available to verified accounts.</p>;
+  if (!account) {
+    return (
+      <p className="muted">
+        <Link to="/roster">Browse the public roster</Link>, or <Link to="/login">log in</Link> (any
+        account, verification not required) to search by more specific details.
+      </p>
+    );
   }
 
   const onSearch = async (e) => {

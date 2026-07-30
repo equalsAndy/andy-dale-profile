@@ -1,7 +1,7 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const db = require('../db');
-const { requireAuth, requireVerified } = require('../middleware/auth');
+const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -12,7 +12,7 @@ const searchLimiter = rateLimit({
   message: { error: 'Too many searches, please try again later' },
 });
 
-router.post('/search', requireAuth, requireVerified, searchLimiter, async (req, res, next) => {
+router.post('/search', requireAuth, searchLimiter, async (req, res, next) => {
   const { school, hometownCity, currentCity, employer, birthYearFrom, birthYearTo, message } = req.body;
 
   const conditions = ['a.membership_status = \'verified\'', 'a.search_participation != \'invisible\'', 'p.account_id != ?'];

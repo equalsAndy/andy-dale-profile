@@ -7,6 +7,7 @@ import Profile from './pages/Profile';
 import ProfileEdit from './pages/ProfileEdit';
 import Inbox from './pages/Inbox';
 import FindAndy from './pages/FindAndy';
+import Roster from './pages/Roster';
 import Admin from './pages/Admin';
 
 export default function App() {
@@ -20,6 +21,7 @@ export default function App() {
         <Route path="/profile/edit" element={<ProfileEdit />} />
         <Route path="/inbox" element={<Inbox />} />
         <Route path="/find" element={<FindAndy />} />
+        <Route path="/roster" element={<Roster />} />
         <Route path="/admin" element={<Admin />} />
       </Route>
     </Routes>
