@@ -25,13 +25,15 @@ export default function Profile() {
         {account.membership_status}
       </span>
       {account.is_admin ? <span className="pill pill-verified" style={{ marginLeft: 6 }}>Admin</span> : null}
-      <p className="muted" style={{ marginTop: 16, fontSize: 13 }}>
-        Full profile &amp; privacy editing is coming in the next pass — for now this confirms the
-        API is wired up correctly.
-      </p>
-      <button className="btn btn-ghost" onClick={logout} style={{ marginTop: 8 }}>
-        Log out
-      </button>
+      {profile?.bio && <p style={{ marginTop: 16 }}>{profile.bio}</p>}
+      <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+        <Link className="btn btn-primary" to="/profile/edit">
+          Edit profile &amp; privacy
+        </Link>
+        <button className="btn btn-ghost" onClick={logout}>
+          Log out
+        </button>
+      </div>
     </div>
   );
 }
