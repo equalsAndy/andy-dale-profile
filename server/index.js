@@ -12,6 +12,7 @@ const adminRoutes = require('./routes/admin');
 const messageRoutes = require('./routes/messages');
 const searchRoutes = require('./routes/search');
 const directoryRoutes = require('./routes/directory');
+const relayRoutes = require('./routes/relay');
 
 const app = express();
 
@@ -46,6 +47,7 @@ app.use('/api', adminRoutes);
 app.use('/api', messageRoutes);
 app.use('/api', searchRoutes);
 app.use('/api', directoryRoutes);
+app.use('/api', relayRoutes);
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 

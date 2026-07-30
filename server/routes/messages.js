@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const express = require('express');
 const db = require('../db');
 const { requireAuth } = require('../middleware/auth');
+const { sendRelayEmail } = require('../utils/relay');
 
 const router = express.Router();
 
@@ -227,33 +228,55 @@ router.post('/threads/:id/messages', requireAuth, async (req, res, next) => {
       return res.status(403).json({ error: 'Not a participant in this thread' });
     }
 
-    const [threadRows] = await conn.query('SELECT status FROM message_threads WHERE thread_id = ?', [
+    const [threadRows] = await conn.query('SELECT status, alias_token FROM message_threads WHERE thread_id = ?', [
       req.params.id,
     ]);
     if (threadRows[0]?.status === 'blocked') {
       await conn.rollback();
       return res.status(403).json({ error: 'This thread is blocked' });
     }
+    const aliasToken = threadRows[0].alias_token;
 
     const otherId = await otherParticipant(conn, req.params.id, req.account.account_id);
     const [otherAccountRows] = await conn.query(
-      'SELECT notification_mode FROM accounts WHERE account_id = ?',
+      'SELECT login_email, notification_mode FROM accounts WHERE account_id = ?',
       [otherId]
     );
     const emailLinked = otherAccountRows[0]?.notification_mode === 'email_linked';
+
+    const [senderProfileRows] = await conn.query(
+      'SELECT first_name, preferred_name FROM profile WHERE account_id = ?',
+      [req.account.account_id]
+    );
+    const senderName = senderProfileRows[0]?.preferred_name || senderProfileRows[0]?.first_name || 'Andy';
 
     const [result] = await conn.query(
       `INSERT INTO messages (thread_id, sender_account_id, body, delivery_channel, relay_status, delivered_at)
        VALUES (?, ?, ?, ?, ?, NOW())`,
       [req.params.id, req.account.account_id, body, emailLinked ? 'email' : 'in_app', emailLinked ? 'pending' : 'n/a']
     );
+    const messageId = result.insertId;
 
     await conn.query('UPDATE message_threads SET last_activity_at = NOW() WHERE thread_id = ?', [
       req.params.id,
     ]);
 
     await conn.commit();
-    res.status(201).json({ messageId: result.insertId });
+    res.status(201).json({ messageId });
+
+    if (emailLinked) {
+      const { status, reason } = await sendRelayEmail({
+        aliasToken,
+        toEmail: otherAccountRows[0].login_email,
+        senderName,
+        body,
+      });
+      await db.query('UPDATE messages SET relay_status = ?, failure_reason = ? WHERE message_id = ?', [
+        status,
+        reason || null,
+        messageId,
+      ]);
+    }
   } catch (err) {
     await conn.rollback();
     next(err);
