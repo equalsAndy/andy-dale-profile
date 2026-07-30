@@ -11,7 +11,7 @@ USE AndyDale;
 CREATE TABLE accounts (
   account_id            INT AUTO_INCREMENT PRIMARY KEY,
   login_email           VARCHAR(255) NOT NULL UNIQUE, -- real email, used only for login/system notices; never shown to other users
-  password_hash         VARCHAR(255) NULL,             -- nullable to allow SSO-only accounts later
+  password_hash         VARCHAR(255) NOT NULL,         -- local email+password auth only for v1, no SSO
   membership_status     ENUM('pending','verified','denied') NOT NULL DEFAULT 'pending',
   is_admin              TINYINT(1) NOT NULL DEFAULT 0,
   notification_mode     ENUM('in_app_only','email_linked') NOT NULL DEFAULT 'in_app_only',
