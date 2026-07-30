@@ -1,0 +1,104 @@
+.home-title {
+  font-size: 34px;
+  line-height: 1.1;
+  margin: 6px 0 10px;
+}
+
+.home-lede {
+  font-size: 16px;
+  color: var(--muted);
+  max-width: 56ch;
+  margin: 0 0 18px;
+}
+
+.home-ctas {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.home-stats {
+  display: flex;
+  gap: 22px;
+  flex-wrap: wrap;
+  margin-bottom: 26px;
+}
+
+.stat {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.stat b {
+  display: block;
+  font-size: 20px;
+  color: var(--ink);
+}
+
+.board {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+
+.name-badge {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  padding: 18px 20px;
+  width: 260px;
+  flex: none;
+}
+
+.hero-badge {
+  width: 290px;
+}
+
+.badge-eyelet {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--ground);
+  border: 1px solid var(--line);
+  margin: 0 auto 10px;
+}
+
+.badge-label {
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+  margin-bottom: 6px;
+}
+
+.badge-hello {
+  text-align: center;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.badge-name {
+  text-align: center;
+  font-size: 28px;
+  margin: 2px 0 4px;
+}
+
+.badge-sub {
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.ticker-item {
+  text-align: center;
+  font-size: 18px;
+  min-height: 1.6em;
+}
+
+.ticker-empty {
+  text-align: center;
+  font-size: 13px;
+  min-height: 1.6em;
+}
