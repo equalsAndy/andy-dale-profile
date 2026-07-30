@@ -159,25 +159,32 @@ CREATE TABLE message_threads (
   last_activity_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- account_id is nullable: search (and therefore a thread) can involve
+-- someone who isn't an Andy Dale and will never have an account -- e.g.
+-- a friend looking for a specific Andy they went to school with. Exactly
+-- one of account_id / external_email is set per row.
 CREATE TABLE thread_participants (
-  thread_id   INT NOT NULL,
-  account_id  INT NOT NULL,
-  PRIMARY KEY (thread_id, account_id),
+  participant_id INT AUTO_INCREMENT PRIMARY KEY,
+  thread_id       INT NOT NULL,
+  account_id      INT NULL,
+  external_email  VARCHAR(255) NULL,
+  UNIQUE KEY uniq_thread_account (thread_id, account_id),
   FOREIGN KEY (thread_id) REFERENCES message_threads(thread_id) ON DELETE CASCADE,
   FOREIGN KEY (account_id) REFERENCES accounts(account_id) ON DELETE CASCADE
 );
 
 CREATE TABLE messages (
-  message_id        INT AUTO_INCREMENT PRIMARY KEY,
-  thread_id         INT NOT NULL,
-  sender_account_id INT NOT NULL,
-  body              TEXT NOT NULL,
-  delivery_channel  ENUM('in_app','email') NOT NULL DEFAULT 'in_app',
-  relay_status      ENUM('n/a','pending','sent','failed') NOT NULL DEFAULT 'n/a', -- only meaningful when delivery_channel = 'email'
-  failure_reason    TEXT NULL,
-  delivered_at      TIMESTAMP NULL,
-  read_at           TIMESTAMP NULL,
-  created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  message_id            INT AUTO_INCREMENT PRIMARY KEY,
+  thread_id              INT NOT NULL,
+  sender_account_id      INT NULL, -- NULL when sender is an external (non-account) participant
+  sender_external_email  VARCHAR(255) NULL,
+  body                   TEXT NOT NULL,
+  delivery_channel       ENUM('in_app','email') NOT NULL DEFAULT 'in_app',
+  relay_status           ENUM('n/a','pending','sent','failed') NOT NULL DEFAULT 'n/a', -- only meaningful when delivery_channel = 'email'
+  failure_reason         TEXT NULL,
+  delivered_at           TIMESTAMP NULL,
+  read_at                TIMESTAMP NULL,
+  created_at             TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (thread_id) REFERENCES message_threads(thread_id) ON DELETE CASCADE,
   FOREIGN KEY (sender_account_id) REFERENCES accounts(account_id) ON DELETE CASCADE
 );
@@ -189,11 +196,13 @@ CREATE TABLE messages (
 -- Reverse-notify: fires for accounts with search_participation = 'notify_only'
 -- when a search matches them. They are never shown to the searcher; they
 -- can only respond by turning their own match into a connection_request
--- back to the searcher.
+-- (searcher_account_id set) or a fresh external thread (searcher_email set,
+-- for a searcher with no account) back to the searcher.
 CREATE TABLE search_match_notifications (
   notification_id       INT AUTO_INCREMENT PRIMARY KEY,
   matched_account_id    INT NOT NULL,
-  searcher_account_id   INT NOT NULL,
+  searcher_account_id   INT NULL,
+  searcher_email        VARCHAR(255) NULL, -- set instead of searcher_account_id when the searcher has no account
   search_criteria       JSON NOT NULL,
   message               TEXT NULL, -- what the searcher would say, shown to the matched account if they choose to look
   status                ENUM('pending','responded','ignored') NOT NULL DEFAULT 'pending',

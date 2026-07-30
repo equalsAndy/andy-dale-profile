@@ -42,8 +42,14 @@ export default function Inbox() {
         <div className="card" key={t.thread_id} style={{ marginBottom: 10 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <b>
-              {t.first_name} {t.last_name}
-              {t.current_city ? ` · ${t.current_city}` : ''}
+              {t.other_account_id ? (
+                <>
+                  {t.first_name} {t.last_name}
+                  {t.current_city ? ` · ${t.current_city}` : ''}
+                </>
+              ) : (
+                <>{t.other_external_email} <span className="muted" style={{ fontWeight: 400 }}>(not an Andy Dale)</span></>
+              )}
             </b>
             {t.unread_count > 0 && <span className="pill pill-verified">{t.unread_count} new</span>}
           </div>

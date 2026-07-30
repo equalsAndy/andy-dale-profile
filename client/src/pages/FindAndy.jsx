@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api';
 
@@ -7,23 +6,19 @@ export default function FindAndy() {
   const { account } = useAuth();
   const [hometownCity, setHometownCity] = useState('');
   const [message, setMessage] = useState('');
+  const [searcherEmail, setSearcherEmail] = useState('');
   const [results, setResults] = useState(null);
   const [error, setError] = useState(null);
-
-  if (!account) {
-    return (
-      <p className="muted">
-        <Link to="/roster">Browse the public roster</Link>, or <Link to="/login">log in</Link> (any
-        account, verification not required) to search by more specific details.
-      </p>
-    );
-  }
 
   const onSearch = async (e) => {
     e.preventDefault();
     setError(null);
     try {
-      const r = await api.post('/search', { hometownCity, message });
+      const r = await api.post('/search', {
+        hometownCity,
+        message,
+        searcherEmail: account ? undefined : searcherEmail || undefined,
+      });
       setResults(r.findableMatches);
     } catch (err) {
       setError(err.message);
@@ -33,6 +28,10 @@ export default function FindAndy() {
   return (
     <div>
       <h2 className="fun">Find an Andy</h2>
+      <p className="muted" style={{ maxWidth: '56ch' }}>
+        Looking for a specific Andy Dale you already know — an old classmate, a relative, whoever?
+        Search by anything you remember about them.
+      </p>
       <form onSubmit={onSearch} className="card" style={{ maxWidth: 420 }}>
         <div className="field">
           <label htmlFor="hometownCity">Grew up near</label>
@@ -42,6 +41,17 @@ export default function FindAndy() {
           <label htmlFor="message">Message (shown to matches who don't appear directly)</label>
           <textarea id="message" value={message} onChange={(e) => setMessage(e.target.value)} />
         </div>
+        {!account && (
+          <div className="field">
+            <label htmlFor="searcherEmail">Your email (so a match can get back to you — optional)</label>
+            <input
+              id="searcherEmail"
+              type="email"
+              value={searcherEmail}
+              onChange={(e) => setSearcherEmail(e.target.value)}
+            />
+          </div>
+        )}
         {error && <p className="pill pill-locked">{error}</p>}
         <button className="btn btn-primary" type="submit">
           Search

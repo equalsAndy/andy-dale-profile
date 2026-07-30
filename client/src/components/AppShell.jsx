@@ -11,7 +11,8 @@ const LOGGED_IN_ITEMS = [
 
 const LOGGED_OUT_ITEMS = [
   { to: '/', label: 'Home', icon: '🪪', end: true },
-  { to: '/roster', label: 'Roster', icon: '🔎' },
+  { to: '/find', label: 'Find', icon: '🔎' },
+  { to: '/roster', label: 'Roster', icon: '📋' },
   { to: '/join', label: 'Join', icon: '🙋' },
   { to: '/login', label: 'Log in', icon: '🔑' },
 ];
@@ -33,7 +34,7 @@ export default function AppShell() {
                 {item.label}
               </NavLink>
             ))}
-            {account?.is_admin && (
+            {!!account?.is_admin && (
               <NavLink to="/admin" className="shell-toplink">
                 Admin
               </NavLink>

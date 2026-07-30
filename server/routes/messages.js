@@ -1,19 +1,25 @@
-const crypto = require('crypto');
 const express = require('express');
 const db = require('../db');
 const { requireAuth } = require('../middleware/auth');
 const { sendRelayEmail } = require('../utils/relay');
+const { generateAliasToken } = require('../utils/alias');
 
 const router = express.Router();
 
-const generateAliasToken = () => crypto.randomBytes(16).toString('hex');
-
+// Returns the other participant's row -- { account_id, external_email } --
+// with exactly one of the two set. Matches on participant_id rather than
+// account_id so it works whether the other side is an account or external.
 const otherParticipant = async (conn, threadId, myAccountId) => {
-  const [rows] = await conn.query(
-    'SELECT account_id FROM thread_participants WHERE thread_id = ? AND account_id != ?',
+  const [meRows] = await conn.query(
+    'SELECT participant_id FROM thread_participants WHERE thread_id = ? AND account_id = ?',
     [threadId, myAccountId]
   );
-  return rows[0]?.account_id;
+  if (!meRows[0]) return null;
+  const [rows] = await conn.query(
+    'SELECT account_id, external_email FROM thread_participants WHERE thread_id = ? AND participant_id != ?',
+    [threadId, meRows[0].participant_id]
+  );
+  return rows[0] || null;
 };
 
 const assertParticipant = async (conn, threadId, accountId) => {
@@ -25,6 +31,9 @@ const assertParticipant = async (conn, threadId, accountId) => {
 };
 
 // ---------- Connection requests (first-contact protocol) ----------
+// Account-to-account only -- an external (non-account) party never
+// initiates or accepts one of these; see search-notifications/:id/respond
+// in search.js for how a matched Andy reaches an external searcher instead.
 
 router.post('/connection-requests', requireAuth, async (req, res, next) => {
   const { recipientAccountId, message, source } = req.body;
@@ -169,18 +178,22 @@ router.get('/threads', requireAuth, async (req, res, next) => {
     const [rows] = await db.query(
       `SELECT
          mt.thread_id, mt.status, mt.last_activity_at,
-         p.account_id AS other_account_id, p.first_name, p.last_name, p.current_city, p.current_country,
+         other.account_id AS other_account_id,
+         other.external_email AS other_external_email,
+         p.first_name, p.last_name, p.current_city, p.current_country,
          a.membership_status,
          (SELECT body FROM messages m WHERE m.thread_id = mt.thread_id ORDER BY m.created_at DESC LIMIT 1) AS last_message,
          (SELECT COUNT(*) FROM messages m
-            WHERE m.thread_id = mt.thread_id AND m.sender_account_id != ? AND m.read_at IS NULL) AS unread_count
+            WHERE m.thread_id = mt.thread_id
+              AND (m.sender_account_id IS NULL OR m.sender_account_id != ?)
+              AND m.read_at IS NULL) AS unread_count
        FROM message_threads mt
        JOIN thread_participants me ON me.thread_id = mt.thread_id AND me.account_id = ?
-       JOIN thread_participants other ON other.thread_id = mt.thread_id AND other.account_id != ?
-       JOIN profile p ON p.account_id = other.account_id
-       JOIN accounts a ON a.account_id = other.account_id
+       JOIN thread_participants other ON other.thread_id = mt.thread_id AND other.participant_id != me.participant_id
+       LEFT JOIN profile p ON p.account_id = other.account_id
+       LEFT JOIN accounts a ON a.account_id = other.account_id
        ORDER BY mt.last_activity_at DESC`,
-      [req.account.account_id, req.account.account_id, req.account.account_id]
+      [req.account.account_id, req.account.account_id]
     );
     res.json({ threads: rows });
   } catch (err) {
@@ -198,12 +211,13 @@ router.get('/threads/:id/messages', requireAuth, async (req, res, next) => {
 
     await conn.query(
       `UPDATE messages SET read_at = NOW()
-       WHERE thread_id = ? AND sender_account_id != ? AND read_at IS NULL`,
+       WHERE thread_id = ? AND (sender_account_id IS NULL OR sender_account_id != ?) AND read_at IS NULL`,
       [req.params.id, req.account.account_id]
     );
 
     const [messages] = await conn.query(
-      `SELECT message_id, sender_account_id, body, delivery_channel, relay_status, delivered_at, read_at, created_at
+      `SELECT message_id, sender_account_id, sender_external_email, body, delivery_channel,
+              relay_status, delivered_at, read_at, created_at
        FROM messages WHERE thread_id = ? ORDER BY created_at ASC`,
       [req.params.id]
     );
@@ -237,12 +251,21 @@ router.post('/threads/:id/messages', requireAuth, async (req, res, next) => {
     }
     const aliasToken = threadRows[0].alias_token;
 
-    const otherId = await otherParticipant(conn, req.params.id, req.account.account_id);
-    const [otherAccountRows] = await conn.query(
-      'SELECT login_email, notification_mode FROM accounts WHERE account_id = ?',
-      [otherId]
-    );
-    const emailLinked = otherAccountRows[0]?.notification_mode === 'email_linked';
+    const otherRow = await otherParticipant(conn, req.params.id, req.account.account_id);
+    let emailLinked = false;
+    let toEmail = null;
+    if (otherRow?.account_id) {
+      const [otherAccountRows] = await conn.query(
+        'SELECT login_email, notification_mode FROM accounts WHERE account_id = ?',
+        [otherRow.account_id]
+      );
+      emailLinked = otherAccountRows[0]?.notification_mode === 'email_linked';
+      toEmail = otherAccountRows[0]?.login_email;
+    } else if (otherRow?.external_email) {
+      // External participants have no in-app inbox -- email is the only channel.
+      emailLinked = true;
+      toEmail = otherRow.external_email;
+    }
 
     const [senderProfileRows] = await conn.query(
       'SELECT first_name, preferred_name FROM profile WHERE account_id = ?',
@@ -264,13 +287,8 @@ router.post('/threads/:id/messages', requireAuth, async (req, res, next) => {
     await conn.commit();
     res.status(201).json({ messageId });
 
-    if (emailLinked) {
-      const { status, reason } = await sendRelayEmail({
-        aliasToken,
-        toEmail: otherAccountRows[0].login_email,
-        senderName,
-        body,
-      });
+    if (emailLinked && toEmail) {
+      const { status, reason } = await sendRelayEmail({ aliasToken, toEmail, senderName, body });
       await db.query('UPDATE messages SET relay_status = ?, failure_reason = ? WHERE message_id = ?', [
         status,
         reason || null,
@@ -294,16 +312,20 @@ router.post('/threads/:id/block', requireAuth, async (req, res, next) => {
       await conn.rollback();
       return res.status(403).json({ error: 'Not a participant in this thread' });
     }
-    const otherId = await otherParticipant(conn, req.params.id, req.account.account_id);
+    const otherRow = await otherParticipant(conn, req.params.id, req.account.account_id);
 
     await conn.query(
       "UPDATE message_threads SET status = 'blocked', alias_token = ? WHERE thread_id = ?",
       [generateAliasToken(), req.params.id]
     );
-    await conn.query(
-      'INSERT IGNORE INTO blocks (blocker_account_id, blocked_account_id) VALUES (?, ?)',
-      [req.account.account_id, otherId]
-    );
+    // blocks is account-to-account only; an external party has nothing to
+    // record there, but the thread itself is already blocked above either way.
+    if (otherRow?.account_id) {
+      await conn.query(
+        'INSERT IGNORE INTO blocks (blocker_account_id, blocked_account_id) VALUES (?, ?)',
+        [req.account.account_id, otherRow.account_id]
+      );
+    }
 
     await conn.commit();
     res.json({ ok: true });

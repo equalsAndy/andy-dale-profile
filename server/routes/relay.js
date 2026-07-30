@@ -48,55 +48,86 @@ router.post('/relay/inbound', verifyWebhookAuth, async (req, res, next) => {
       return res.status(200).json({ ok: true, skipped: 'unknown or blocked thread' });
     }
 
-    const [senderAccountRows] = await db.query('SELECT account_id FROM accounts WHERE login_email = ?', [
-      senderEmail,
-    ]);
-    const senderAccountId = senderAccountRows[0]?.account_id;
-    if (!senderAccountId) {
-      return res.status(200).json({ ok: true, skipped: 'sender email not recognized' });
+    // Sender is either a real account (matched by login_email) or an
+    // external participant replying by email -- either is valid as long
+    // as they're actually a participant of *this* thread.
+    const [accountMatch] = await db.query(
+      `SELECT tp.participant_id, a.account_id
+       FROM thread_participants tp
+       JOIN accounts a ON a.account_id = tp.account_id
+       WHERE tp.thread_id = ? AND a.login_email = ?`,
+      [thread.thread_id, senderEmail]
+    );
+
+    let senderAccountId = null;
+    let senderExternalEmail = null;
+    let senderParticipantId = null;
+
+    if (accountMatch.length) {
+      senderAccountId = accountMatch[0].account_id;
+      senderParticipantId = accountMatch[0].participant_id;
+    } else {
+      const [externalMatch] = await db.query(
+        'SELECT participant_id FROM thread_participants WHERE thread_id = ? AND external_email = ?',
+        [thread.thread_id, senderEmail]
+      );
+      if (externalMatch.length) {
+        senderExternalEmail = senderEmail;
+        senderParticipantId = externalMatch[0].participant_id;
+      }
     }
 
-    const [participantRows] = await db.query(
-      'SELECT account_id FROM thread_participants WHERE thread_id = ? AND account_id = ?',
-      [thread.thread_id, senderAccountId]
-    );
-    if (participantRows.length === 0) {
-      return res.status(200).json({ ok: true, skipped: 'sender not a participant' });
+    if (!senderParticipantId) {
+      return res.status(200).json({ ok: true, skipped: 'sender not a participant of this thread' });
     }
 
     const [otherRows] = await db.query(
-      `SELECT a.account_id, a.login_email, a.notification_mode, p.first_name, p.preferred_name
-       FROM thread_participants tp
-       JOIN accounts a ON a.account_id = tp.account_id
-       JOIN profile p ON p.account_id = a.account_id
-       WHERE tp.thread_id = ? AND tp.account_id != ?`,
-      [thread.thread_id, senderAccountId]
+      'SELECT account_id, external_email FROM thread_participants WHERE thread_id = ? AND participant_id != ?',
+      [thread.thread_id, senderParticipantId]
     );
-    const recipientAccount = otherRows[0];
-    const emailLinked = recipientAccount?.notification_mode === 'email_linked';
+    const other = otherRows[0];
+
+    let emailLinked = false;
+    let toEmail = null;
+    if (other?.account_id) {
+      const [otherAccountRows] = await db.query(
+        'SELECT login_email, notification_mode FROM accounts WHERE account_id = ?',
+        [other.account_id]
+      );
+      emailLinked = otherAccountRows[0]?.notification_mode === 'email_linked';
+      toEmail = otherAccountRows[0]?.login_email;
+    } else if (other?.external_email) {
+      emailLinked = true;
+      toEmail = other.external_email;
+    }
 
     const [insertResult] = await db.query(
-      `INSERT INTO messages (thread_id, sender_account_id, body, delivery_channel, relay_status, delivered_at)
-       VALUES (?, ?, ?, ?, ?, NOW())`,
-      [thread.thread_id, senderAccountId, bodyText, emailLinked ? 'email' : 'in_app', emailLinked ? 'pending' : 'n/a']
+      `INSERT INTO messages
+         (thread_id, sender_account_id, sender_external_email, body, delivery_channel, relay_status, delivered_at)
+       VALUES (?, ?, ?, ?, ?, ?, NOW())`,
+      [
+        thread.thread_id,
+        senderAccountId,
+        senderExternalEmail,
+        bodyText,
+        emailLinked ? 'email' : 'in_app',
+        emailLinked ? 'pending' : 'n/a',
+      ]
     );
     await db.query('UPDATE message_threads SET last_activity_at = NOW() WHERE thread_id = ?', [
       thread.thread_id,
     ]);
 
-    if (emailLinked) {
-      const [senderProfileRows] = await db.query(
-        'SELECT first_name, preferred_name FROM profile WHERE account_id = ?',
-        [senderAccountId]
-      );
-      const senderName =
-        senderProfileRows[0]?.preferred_name || senderProfileRows[0]?.first_name || 'Andy';
-      const { status, reason } = await sendRelayEmail({
-        aliasToken,
-        toEmail: recipientAccount.login_email,
-        senderName,
-        body: bodyText,
-      });
+    if (emailLinked && toEmail) {
+      let senderName = senderEmail.split('@')[0];
+      if (senderAccountId) {
+        const [senderProfileRows] = await db.query(
+          'SELECT first_name, preferred_name FROM profile WHERE account_id = ?',
+          [senderAccountId]
+        );
+        senderName = senderProfileRows[0]?.preferred_name || senderProfileRows[0]?.first_name || senderName;
+      }
+      const { status, reason } = await sendRelayEmail({ aliasToken, toEmail, senderName, body: bodyText });
       await db.query('UPDATE messages SET relay_status = ?, failure_reason = ? WHERE message_id = ?', [
         status,
         reason || null,
