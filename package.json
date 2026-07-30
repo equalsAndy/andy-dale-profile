@@ -1,0 +1,13 @@
+{
+  "name": "andy-dale-profile",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Andy Dale profile app",
+  "scripts": {
+    "test:postmark": "node scripts/test-postmark.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "postmark": "^4.0.5"
+  }
+}
