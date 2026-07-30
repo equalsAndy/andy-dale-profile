@@ -9,6 +9,7 @@ const { attachAccount } = require('./middleware/auth');
 const authRoutes = require('./routes/auth');
 const profileRoutes = require('./routes/profile');
 const adminRoutes = require('./routes/admin');
+const messageRoutes = require('./routes/messages');
 
 const app = express();
 
@@ -40,6 +41,7 @@ app.use(attachAccount);
 app.use('/api/auth', authRoutes);
 app.use('/api', profileRoutes);
 app.use('/api', adminRoutes);
+app.use('/api', messageRoutes);
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 
